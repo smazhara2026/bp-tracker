@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BP Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.0.4/tesseract.min.js"></script>
+<style>
+:root {
+  --red:#c0392b;--red-soft:#f9e5e3;
+  --amber:#d97706;--amber-soft:#fef3c7;
+  --green:#16a34a;--green-soft:#dcfce7;
+  --blue:#2563eb;--blue-soft:#eff6ff;
+  --text:#1a1a2e;--text-2:#5a5a7a;--text-3:#9a9ab0;
+  --bg:#f4f3f0;--card:#ffffff;--border:#e5e4e0;
+  --radius:16px;--shadow:0 2px 12px rgba(0,0,0,0.07);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;font-size:15px;}
+h1,h2,h3{font-family:'DM Serif Display',serif;font-weight:400;}
+.app{display:flex;flex-direction:column;min-height:100vh;}
+.topbar{background:var(--text);color:white;padding:14px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px;}
+.topbar h1{font-size:20px;color:white;letter-spacing:-0.3px;}
+.auth-status{font-size:13px;color:rgba(255,255,255,0.6);}
+.auth-status.connected{color:#6ee7b7;}
+.nav{background:var(--card);border-bottom:1px solid var(--border);display:flex;padding:0 24px;gap:4px;overflow-x:auto;}
+.nav-btn{padding:12px 16px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all 0.15s;white-space:nowrap;flex-shrink:0;}
+.nav-btn.active{color:var(--text);border-bottom-color:var(--text);font-weight:500;}
+.nav-btn:hover:not(.active){color:var(--text);}
+.main{flex:1;padding:24px;max-width:900px;margin:0 auto;width:100%;padding-bottom:110px;}
+.view{display:none;}.view.active{display:block;}
+.card{background:var(--card);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border:1px solid var(--border);}
+.card+.card{margin-top:16px;}
+.card-title{font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--text-3);font-weight:500;margin-bottom:14px;}
+.btn{padding:11px 22px;border-radius:10px;border:none;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all 0.15s;}
+.btn-primary{background:var(--text);color:white;}.btn-primary:hover{background:#2d2d4a;}
+.btn-secondary{background:var(--border);color:var(--text);}.btn-secondary:hover{background:#d5d4d0;}
+.btn-sm{padding:7px 14px;font-size:13px;border-radius:8px;}
+.btn-danger{background:var(--red-soft);color:var(--red);}
+.section-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+.section-title{font-size:22px;letter-spacing:-0.5px;}
+.tod-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.tod-card{background:var(--bg);border-radius:12px;padding:16px;text-align:center;border:1px solid var(--border);}
+.tod-icon{font-size:22px;margin-bottom:6px;}
+.tod-label{font-size:11px;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-3);font-weight:500;}
+.tod-reading{font-family:'DM Serif Display',serif;font-size:26px;margin:4px 0;}
+.tod-sub{font-size:12px;color:var(--text-2);}
+.tod-count{font-size:11px;color:var(--text-3);margin-top:2px;}
+.gb-track{display:flex;height:10px;border-radius:5px;overflow:hidden;margin:6px 0;}
+.gb-marker{height:18px;position:relative;margin:-4px 0 0;}
+.gb-needle{position:absolute;width:2px;height:14px;background:var(--text);border-radius:1px;top:0;transform:translateX(-50%);}
+.gb-needle-label{position:absolute;top:16px;font-size:10px;font-weight:500;color:var(--text);transform:translateX(-50%);white-space:nowrap;}
+.gb-labels{display:flex;font-size:10px;color:var(--text-3);}
+.gb-labels span{flex:1;text-align:center;}
+.log-table{width:100%;border-collapse:collapse;font-size:13px;}
+.log-table th{text-align:left;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-3);font-weight:500;border-bottom:1px solid var(--border);}
+.log-table td{padding:10px;border-bottom:1px solid #f0efe9;vertical-align:middle;}
+.log-table tr:last-child td{border-bottom:none;}
+.log-table tr:hover td{background:#f9f8f5;}
+.bp-chip{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;}
+.chart-wrap{position:relative;height:220px;}
+.form-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+.form-group{display:flex;flex-direction:column;gap:6px;flex:1;min-width:120px;}
+.form-group label{font-size:12px;font-weight:500;color:var(--text-2);}
+.form-group input,.form-group select,.form-group textarea{padding:10px 12px;border:1.5px solid var(--border);border-radius:10px;font-family:'DM Sans',sans-serif;font-size:15px;color:var(--text);background:var(--bg);outline:none;transition:border-color 0.15s;width:100%;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--text);}
+.form-group textarea{resize:vertical;min-height:55px;}
+.drive-bar{background:var(--blue-soft);border:1px solid #bfdbfe;border-radius:10px;padding:12px 16px;margin-bottom:16px;}
+.drive-bar.success{background:var(--green-soft);border-color:#86efac;}
+.drive-info{font-size:13px;color:var(--text-2);}
+.drive-info strong{color:var(--text);}
+.tip-row{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #f0efe9;}
+.tip-row:last-child{border-bottom:none;}
+.tip-icon{font-size:18px;flex-shrink:0;margin-top:1px;}
+.tip-text{font-size:13px;color:var(--text-2);line-height:1.5;}
+.tip-text strong{color:var(--text);}
+.toast{position:fixed;bottom:90px;right:20px;background:var(--text);color:white;padding:12px 18px;border-radius:10px;font-size:14px;z-index:3000;transform:translateY(20px);opacity:0;transition:all 0.3s;pointer-events:none;max-width:280px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.error{background:var(--red);}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-3);}
+.empty-state p{margin-top:8px;font-size:14px;}
+.fab-wrap{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:500;align-items:center;}
+.fab{display:flex;align-items:center;gap:9px;padding:0 22px;height:54px;border:none;border-radius:27px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.18);transition:transform 0.15s,box-shadow 0.15s;white-space:nowrap;}
+.fab:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,0.22);}
+.fab:active{transform:scale(0.97);}
+.fab-primary{background:var(--text);color:white;}
+.fab-scan{background:white;color:var(--text);border:1.5px solid var(--border);}
+.fab-icon{font-size:20px;line-height:1;}
+.modal-overlay{position:fixed;inset:0;background:rgba(10,10,20,0.55);z-index:900;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s;}
+.modal-overlay.open{opacity:1;pointer-events:all;}
+.modal-sheet{background:var(--card);width:100%;max-width:520px;border-radius:24px 24px 0 0;padding-bottom:env(safe-area-inset-bottom,12px);transform:translateY(100%);transition:transform 0.32s cubic-bezier(0.32,0.72,0,1);max-height:92vh;overflow-y:auto;}
+.modal-overlay.open .modal-sheet{transform:translateY(0);}
+.modal-handle{width:40px;height:4px;background:var(--border);border-radius:2px;margin:12px auto 0;}
+.modal-header{padding:16px 20px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);}
+.modal-title{font-family:'DM Serif Display',serif;font-size:20px;}
+.modal-close{background:var(--bg);border:none;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:18px;color:var(--text-2);display:flex;align-items:center;justify-content:center;}
+.modal-body{padding:20px;}
+.modal-footer{padding:12px 20px 20px;display:flex;gap:10px;border-top:1px solid var(--border);}
+.tod-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:500;background:var(--blue-soft);color:var(--blue);margin-bottom:16px;}
+.bp-inputs{display:flex;gap:8px;align-items:flex-end;margin-bottom:14px;}
+.bp-num-wrap{flex:1;}
+.bp-num-label{font-size:11px;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-3);font-weight:500;margin-bottom:5px;}
+.bp-num-input{width:100%;padding:12px 8px;text-align:center;font-family:'DM Serif Display',serif;font-size:36px;border:2px solid var(--border);border-radius:14px;background:var(--bg);color:var(--text);outline:none;transition:border-color 0.15s;-moz-appearance:textfield;}
+.bp-num-input::-webkit-outer-spin-button,.bp-num-input::-webkit-inner-spin-button{-webkit-appearance:none;}
+.bp-num-input:focus{border-color:var(--text);}
+.bp-num-input.pulse-input{font-size:28px;}
+.bp-sep{font-family:'DM Serif Display',serif;font-size:28px;color:var(--text-3);padding-bottom:10px;flex-shrink:0;}
+.lifestyle-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+.lifestyle-grid .form-group{min-width:0;}
+.scan-overlay{position:fixed;inset:0;background:#000;z-index:1000;display:flex;flex-direction:column;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+.scan-overlay.open{opacity:1;pointer-events:all;}
+#scanVideo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+#scanCanvas{display:none;}
+.scan-topbar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:rgba(0,0,0,0.65);z-index:10;}
+.scan-topbar-title{color:white;font-size:16px;font-weight:500;}
+.scan-x{background:rgba(255,255,255,0.15);border:none;color:white;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;}
+.scan-finder{position:absolute;top:50%;left:50%;transform:translate(-50%,-58%);width:min(55%,240px);aspect-ratio:3/4;border:2px solid rgba(255,255,255,0.85);border-radius:12px;box-shadow:0 0 0 9999px rgba(0,0,0,0.42);z-index:10;}
+.scan-hint{position:absolute;z-index:11;color:rgba(255,255,255,0.85);font-size:12px;text-align:center;background:rgba(0,0,0,0.5);padding:5px 14px;border-radius:20px;left:50%;transform:translateX(-50%);top:calc(50% + 110px);white-space:nowrap;}
+.scan-bottom{position:absolute;bottom:0;left:0;right:0;background:rgba(0,0,0,0.78);padding:20px 20px 32px;z-index:10;}
+.scan-status{color:rgba(255,255,255,0.7);font-size:13px;text-align:center;margin-bottom:14px;min-height:18px;}
+.scan-result{display:none;justify-content:center;align-items:flex-end;gap:6px;margin-bottom:16px;}
+.scan-result.show{display:flex;}
+.scan-num-big{font-family:'DM Serif Display',serif;font-size:46px;color:white;line-height:1;}
+.scan-num-lbl{font-size:11px;color:rgba(255,255,255,0.55);text-transform:uppercase;letter-spacing:0.07em;text-align:center;}
+.scan-sep-big{font-family:'DM Serif Display',serif;font-size:32px;color:rgba(255,255,255,0.4);padding-bottom:6px;}
+.scan-actions{display:flex;gap:10px;}
+.scan-cap-btn{width:100%;padding:15px;border-radius:14px;border:none;background:white;color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;}
+.scan-retry-btn{flex:1;padding:14px;border-radius:12px;border:none;background:rgba(255,255,255,0.15);color:white;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;}
+.scan-use-btn{flex:2;padding:14px;border-radius:12px;border:none;background:white;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;}
+.spin-ring{width:22px;height:22px;border:2.5px solid rgba(255,255,255,0.2);border-top-color:white;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.scan-processing{display:none;text-align:center;color:rgba(255,255,255,0.8);font-size:14px;margin-bottom:14px;}
+.scan-processing.show{display:block;}
+/* IMPORT MODAL */
+.import-overlay{position:fixed;inset:0;background:rgba(10,10,20,0.55);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.25s;}
+.import-overlay.open{opacity:1;pointer-events:all;}
+.import-sheet{background:var(--card);width:100%;max-width:560px;border-radius:20px;max-height:88vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,0.2);}
+.import-header{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.import-title{font-family:'DM Serif Display',serif;font-size:20px;}
+.import-body{padding:20px 24px;}
+.import-footer{padding:14px 24px 20px;border-top:1px solid var(--border);display:flex;gap:10px;}
+.import-step{display:none;}.import-step.active{display:block;}
+.import-preview-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:12px;}
+.import-preview-table th{text-align:left;padding:6px 8px;font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--text-3);font-weight:500;border-bottom:1px solid var(--border);}
+.import-preview-table td{padding:7px 8px;border-bottom:1px solid #f0efe9;color:var(--text-2);}
+.import-preview-table tr:last-child td{border-bottom:none;}
+.import-drop{border:2px dashed var(--border);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:border-color 0.15s;background:var(--bg);}
+.import-drop:hover,.import-drop.drag{border-color:var(--text);}
+.import-drop-icon{font-size:32px;margin-bottom:8px;}
+.import-drop-text{font-size:14px;color:var(--text-2);}
+.import-drop-sub{font-size:12px;color:var(--text-3);margin-top:4px;}
+.import-result{padding:16px;border-radius:12px;margin-top:14px;font-size:14px;}
+.import-result.success{background:var(--green-soft);color:#15803d;}
+.import-result.error{background:var(--red-soft);color:var(--red);}
+.import-result.warning{background:var(--amber-soft);color:var(--amber);}
+@media(max-width:600px){
+  .main{padding:14px;padding-bottom:110px;}
+  .tod-grid{grid-template-columns:1fr;}
+  .lifestyle-grid{grid-template-columns:1fr;}
+  .topbar{padding:12px 16px;}
+  .topbar h1{font-size:17px;}
+  #authBtn{display:none;}
+  .bp-num-input{font-size:30px;}
+  #mobileAuthRow{display:flex!important;}
+}
+@media print{
+  .topbar,.nav,.fab-wrap,.no-print{display:none!important;}
+  .main{padding:0;max-width:100%;}
+  .card{box-shadow:none;border:1px solid #ccc;break-inside:avoid;}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="topbar">
+  <h1>❤ BP Tracker</h1>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <span class="auth-status" id="authStatus">Not connected to Drive</span>
+    <button class="btn btn-secondary btn-sm no-print" id="authBtn" onclick="handleAuth()">Connect Google Drive</button>
+    <button class="btn btn-secondary btn-sm no-print" id="loadBtn" onclick="loadFromDrive()" style="display:none">Load from Drive</button>
+  </div>
+</div>
+<nav class="nav">
+  <button class="nav-btn active" onclick="showView('dashboard')">Dashboard</button>
+  <button class="nav-btn" onclick="showView('history')">History</button>
+  <button class="nav-btn" onclick="showView('trends')">Trends</button>
+  <button class="nav-btn" onclick="showView('about')">About Me</button>
+</nav>
+<div class="main">
+  <div class="view active" id="view-dashboard">
+    <div class="section-header">
+      <h2 class="section-title">Today's overview</h2>
+      <button class="btn btn-secondary btn-sm no-print" onclick="window.print()">Print</button>
+    </div>
+    <div class="drive-bar" id="driveBar">
+      <div class="drive-info"><strong>Google Drive not connected.</strong> Data saves locally in this browser. Connect Drive to sync across devices.</div>
+      <div id="mobileAuthRow" style="display:none;margin-top:10px;">
+        <button class="btn btn-primary btn-sm" onclick="handleAuth()" id="mobileAuthBtn">Connect Google Drive</button>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Most recent reading</div>
+      <div id="latestReading"><div class="empty-state"><div style="font-size:32px">📋</div><p>No readings yet — tap <strong>Log reading</strong> below to get started.</p></div></div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Daily averages by time of day</div>
+      <div class="tod-grid">
+        <div class="tod-card"><div class="tod-icon">🌅</div><div class="tod-label">Morning</div><div class="tod-reading" id="todMorning">—</div><div class="tod-sub" id="todMorningPulse"></div><div class="tod-count" id="todMorningCount"></div></div>
+        <div class="tod-card"><div class="tod-icon">☀️</div><div class="tod-label">Afternoon</div><div class="tod-reading" id="todAfternoon">—</div><div class="tod-sub" id="todAfternoonPulse"></div><div class="tod-count" id="todAfternoonCount"></div></div>
+        <div class="tod-card"><div class="tod-icon">🌙</div><div class="tod-label">Evening</div><div class="tod-reading" id="todEvening">—</div><div class="tod-sub" id="todEveningPulse"></div><div class="tod-count" id="todEveningCount"></div></div>
+      </div>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">7-day average vs guidelines</div>
+      <div id="guidelineSection"><div class="empty-state" style="padding:20px"><p>Log a reading to see guideline comparison</p></div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Lifestyle insights</div>
+      <div id="correlationContent"><div class="empty-state" style="padding:20px"><p>Log readings with lifestyle data to see patterns emerge</p></div></div>
+    </div>
+  </div>
+  <div class="view" id="view-history">
+    <div class="section-header">
+      <h2 class="section-title">Reading history</h2>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select class="btn btn-secondary btn-sm" id="filterTod" onchange="renderHistory()">
+          <option value="">All times</option><option value="morning">Morning</option><option value="afternoon">Afternoon</option><option value="evening">Evening</option>
+        </select>
+        <button class="btn btn-secondary btn-sm no-print" onclick="exportCSV()">Export CSV</button>
+      </div>
+    </div>
+    <div class="card" style="overflow-x:auto"><div id="historyTable"></div></div>
+  </div>
+  <div class="view" id="view-trends">
+    <div class="section-header"><h2 class="section-title">Trends over time</h2></div>
+    <div class="card" style="margin-bottom:16px"><div class="card-title">Systolic & diastolic trend (last 30 readings)</div><div class="chart-wrap"><canvas id="trendChart"></canvas></div></div>
+    <div class="card" style="margin-bottom:16px"><div class="card-title">Daily average by time of day</div><div class="chart-wrap"><canvas id="bellChart"></canvas></div></div>
+    <div class="card"><div class="card-title">Classification breakdown</div><div class="chart-wrap" style="height:180px"><canvas id="catChart"></canvas></div></div>
+  </div>
+  <div class="view" id="view-about">
+    <div class="section-header"><h2 class="section-title">Your profile</h2></div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">Personal details</div>
+      <div class="form-row"><div class="form-group"><label>Name</label><input type="text" id="profileName" placeholder="Your name"></div><div class="form-group"><label>Age</label><input type="number" id="profileAge" value="44"></div></div>
+      <div class="form-row"><div class="form-group"><label>Height (cm)</label><input type="number" id="profileHeight" placeholder="e.g. 178"></div><div class="form-group"><label>Weight (kg)</label><input type="number" id="profileWeight" placeholder="e.g. 82"></div></div>
+      <div class="form-row"><div class="form-group"><label>Biological sex</label><select id="profileSex"><option value="male" selected>Male</option><option value="female">Female</option></select></div><div class="form-group"><label>Doctor / GP</label><input type="text" id="profileDoctor" placeholder="Dr. Smith"></div></div>
+      <button class="btn btn-primary" onclick="saveProfile()">Save profile</button>
+    </div>
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-title">BP guidelines reference (ACC/AHA 2017)</div>
+      <div class="tip-row"><div class="tip-icon">🟢</div><div class="tip-text"><strong>Normal:</strong> Systolic &lt;120 AND Diastolic &lt;80 mmHg</div></div>
+      <div class="tip-row"><div class="tip-icon">🟡</div><div class="tip-text"><strong>Elevated:</strong> Systolic 120–129 AND Diastolic &lt;80 mmHg</div></div>
+      <div class="tip-row"><div class="tip-icon">🟠</div><div class="tip-text"><strong>High — Stage 1:</strong> Systolic 130–139 OR Diastolic 80–89 mmHg</div></div>
+      <div class="tip-row"><div class="tip-icon">🔴</div><div class="tip-text"><strong>High — Stage 2:</strong> Systolic ≥140 OR Diastolic ≥90 mmHg</div></div>
+      <div class="tip-row"><div class="tip-icon">🆘</div><div class="tip-text"><strong>Hypertensive crisis:</strong> Systolic &gt;180 AND/OR Diastolic &gt;120 — seek medical attention immediately</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Data management</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" onclick="exportCSV()">Export all data (CSV)</button>
+        <button class="btn btn-secondary" onclick="openImport()">Import from Google Sheets</button>
+        <button class="btn btn-danger btn-sm" onclick="clearAllData()">Clear all data</button>
+      </div>
+      <p style="font-size:12px;color:var(--text-3);margin-top:10px;">Data saves locally and optionally syncs to Google Drive.</p>
+    </div>
+  </div>
+</div>
+<div class="fab-wrap no-print">
+  <button class="fab fab-scan" onclick="openScan()"><span class="fab-icon">📷</span> Scan</button>
+  <button class="fab fab-primary" onclick="openLogModal()"><span class="fab-icon">＋</span> Log reading</button>
+</div>
+</div>
+
+<div class="modal-overlay" id="logModal" onclick="onOverlayClick(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-header"><span class="modal-title">Log a reading</span><button class="modal-close" onclick="closeLogModal()">✕</button></div>
+    <div class="modal-body">
+      <div class="tod-badge" id="modalTodBadge">🌅 Morning</div>
+      <div class="form-row" style="margin-bottom:14px;">
+        <div class="form-group" style="max-width:160px;"><label>Date</label><input type="date" id="inputDate"></div>
+        <div class="form-group" style="max-width:130px;"><label>Time</label><input type="time" id="inputTime" oninput="onTimeChange()"></div>
+      </div>
+      <div class="bp-inputs">
+        <div class="bp-num-wrap"><div class="bp-num-label">Systolic (top)</div><input class="bp-num-input" type="number" id="inputSys" placeholder="125" min="60" max="250" inputmode="numeric" oninput="updateLiveClassify()"></div>
+        <div class="bp-sep">/</div>
+        <div class="bp-num-wrap"><div class="bp-num-label">Diastolic (bottom)</div><input class="bp-num-input" type="number" id="inputDia" placeholder="82" min="40" max="150" inputmode="numeric" oninput="updateLiveClassify()"></div>
+        <div class="bp-sep" style="font-size:18px;padding-bottom:12px;color:var(--text-3);">♥</div>
+        <div class="bp-num-wrap"><div class="bp-num-label">Pulse</div><input class="bp-num-input pulse-input" type="number" id="inputPulse" placeholder="68" min="30" max="200" inputmode="numeric"></div>
+      </div>
+      <div id="liveClassify" style="min-height:30px;margin-bottom:14px;"></div>
+      <div class="lifestyle-grid">
+        <div class="form-group"><label>Exercise today</label><select id="inputExercise"><option value="">— select —</option><option value="none">None</option><option value="light">Light (walk/stretch)</option><option value="moderate">Moderate (30+ min)</option><option value="intense">Intense (gym/run)</option></select></div>
+        <div class="form-group"><label>Diet quality</label><select id="inputDiet"><option value="">— select —</option><option value="poor">Poor (salty/processed)</option><option value="average">Average</option><option value="good">Good (balanced)</option><option value="excellent">Excellent (low sodium)</option></select></div>
+        <div class="form-group"><label>Stress level</label><select id="inputStress"><option value="">— select —</option><option value="1">1 — Very calm</option><option value="2">2 — Relaxed</option><option value="3">3 — Moderate</option><option value="4">4 — Stressed</option><option value="5">5 — Very stressed</option></select></div>
+        <div class="form-group"><label>Caffeine (cups)</label><select id="inputCaffeine"><option value="">— select —</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4+">4+</option></select></div>
+      </div>
+      <div class="form-group"><label>Notes (optional)</label><textarea id="inputNotes" placeholder="e.g. After 5 min rest, felt calm"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" style="flex:1;" onclick="closeLogModal()">Cancel</button>
+      <button class="btn btn-primary" style="flex:2;" onclick="saveReading()">Save reading</button>
+    </div>
+  </div>
+</div>
+
+<div class="scan-overlay" id="scanOverlay">
+  <video id="scanVideo" autoplay playsinline muted></video>
+  <canvas id="scanCanvas"></canvas>
+  <div class="scan-topbar"><span class="scan-topbar-title">Scan BP monitor</span><button class="scan-x" onclick="closeScan()">✕</button></div>
+  <div class="scan-finder"></div>
+  <div class="scan-hint">Align the monitor numbers inside the box</div>
+  <div class="scan-bottom">
+    <div class="scan-processing" id="scanProcessing"><span class="spin-ring"></span>Reading display…</div>
+    <div class="scan-status" id="scanStatus">Point camera at your monitor display, then tap Capture</div>
+    <div class="scan-result" id="scanResult">
+      <div style="text-align:center;"><div class="scan-num-big" id="scanSys">—</div><div class="scan-num-lbl">Systolic</div></div>
+      <div class="scan-sep-big">/</div>
+      <div style="text-align:center;"><div class="scan-num-big" id="scanDia">—</div><div class="scan-num-lbl">Diastolic</div></div>
+      <div class="scan-sep-big" style="font-size:20px;padding-bottom:2px;color:rgba(255,255,255,0.3);">♥</div>
+      <div style="text-align:center;"><div class="scan-num-big" id="scanPulse" style="font-size:36px;">—</div><div class="scan-num-lbl">Pulse</div></div>
+    </div>
+    <div class="scan-actions" id="scanActions"><button class="scan-cap-btn" onclick="captureFrame()"><span style="font-size:20px;">📷</span> Capture</button></div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="import-overlay" id="importModal" onclick="onImportOverlayClick(event)">
+  <div class="import-sheet">
+    <div class="import-header">
+      <span class="import-title">Import from Google Sheets</span>
+      <button class="modal-close" onclick="closeImport()">✕</button>
+    </div>
+    <div class="import-body">
+
+      <!-- STEP 1: Instructions + file drop -->
+      <div class="import-step active" id="importStep1">
+        <p style="font-size:13px;color:var(--text-2);line-height:1.6;margin-bottom:16px;">
+          First, export your Google Sheets file as a CSV:
+        </p>
+        <div style="font-size:13px;color:var(--text-2);line-height:2;">
+          <div>1. Open your Google Sheet</div>
+          <div>2. Click <strong>File</strong> → <strong>Download</strong> → <strong>Comma Separated Values (.csv)</strong></div>
+          <div>3. Then drop that file below or click to select it</div>
+        </div>
+        <div class="import-drop" id="importDrop" onclick="document.getElementById('importFileInput').click()" ondragover="onDragOver(event)" ondragleave="onDragLeave(event)" ondrop="onFileDrop(event)" style="margin-top:20px;">
+          <div class="import-drop-icon">📄</div>
+          <div class="import-drop-text">Drop your CSV file here</div>
+          <div class="import-drop-sub">or click to browse</div>
+        </div>
+        <input type="file" id="importFileInput" accept=".csv" style="display:none" onchange="onFileSelect(event)">
+        <div id="importFeedback"></div>
+      </div>
+
+      <!-- STEP 2: Preview -->
+      <div class="import-step" id="importStep2">
+        <div id="importSummary" style="font-size:14px;color:var(--text-2);margin-bottom:14px;"></div>
+        <div style="font-size:12px;font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Preview (first 5 rows)</div>
+        <div style="overflow-x:auto;">
+          <table class="import-preview-table" id="importPreviewTable"></table>
+        </div>
+        <div id="importWarnings" style="margin-top:12px;"></div>
+      </div>
+
+    </div>
+    <div class="import-footer">
+      <button class="btn btn-secondary" style="flex:1" id="importBackBtn" onclick="importGoBack()">Back</button>
+      <button class="btn btn-primary" style="flex:2" id="importActionBtn" onclick="confirmImport()">Import readings</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+const GAPI_CLIENT_ID = '193357906745-tpbdt6pg3r6tj58se2r9j1ra829lgm56.apps.googleusercontent.com';
+const GAPI_API_KEY   = 'AIzaSyBeyMDar1s0dXj1lRB3AoTWRB5nanTYQUU';
+const DRIVE_SCOPE    = 'https://www.googleapis.com/auth/drive.file';
+const FILE_NAME      = 'bp-tracker-data.json';
+let readings=[],profile={name:'',age:44,height:'',weight:'',sex:'male',doctor:''};
+let driveFileId=null,tokenClient=null,accessToken=null;
+let trendCI=null,bellCI=null,catCI=null,scanStream=null;
+
+window.addEventListener('DOMContentLoaded',()=>{
+  loadLocal();renderAll();
+  if(window.google&&window.google.accounts)initGIS();
+});
+
+function initGIS(){
+  tokenClient=google.accounts.oauth2.initTokenClient({client_id:GAPI_CLIENT_ID,scope:DRIVE_SCOPE,callback:onTokenReceived});
+}
+
+function loadLocal(){
+  try{
+    const r=localStorage.getItem('bp_readings');if(r)readings=JSON.parse(r);
+    const p=localStorage.getItem('bp_profile');if(p){profile={...profile,...JSON.parse(p)};populateProfile();}
+    const f=localStorage.getItem('bp_drive_fid');if(f)driveFileId=f;
+  }catch(e){}
+}
+function saveLocal(){
+  localStorage.setItem('bp_readings',JSON.stringify(readings));
+  localStorage.setItem('bp_profile',JSON.stringify(profile));
+  if(driveFileId)localStorage.setItem('bp_drive_fid',driveFileId);
+}
+
+function todFromTime(t){
+  const h=parseInt((t||'').split(':')[0]);
+  if(isNaN(h))return'morning';
+  return h>=5&&h<12?'morning':h>=12&&h<18?'afternoon':'evening';
+}
+const TOD_EMOJI={morning:'🌅 Morning',afternoon:'☀️ Afternoon',evening:'🌙 Evening'};
+
+function openLogModal(prefill){
+  const now=new Date();
+  document.getElementById('inputDate').value=now.toISOString().slice(0,10);
+  const ts=now.toTimeString().slice(0,5);
+  document.getElementById('inputTime').value=ts;
+  document.getElementById('modalTodBadge').textContent=TOD_EMOJI[todFromTime(ts)];
+  document.getElementById('liveClassify').innerHTML='';
+  if(prefill){
+    document.getElementById('inputSys').value=prefill.sys||'';
+    document.getElementById('inputDia').value=prefill.dia||'';
+    document.getElementById('inputPulse').value=prefill.pulse||'';
+    updateLiveClassify();
+  }else{
+    ['inputSys','inputDia','inputPulse'].forEach(id=>document.getElementById(id).value='');
+  }
+  document.getElementById('logModal').classList.add('open');
+  setTimeout(()=>document.getElementById(prefill?'inputPulse':'inputSys').focus(),340);
+}
+function closeLogModal(){document.getElementById('logModal').classList.remove('open');}
+function onOverlayClick(e){if(e.target===document.getElementById('logModal'))closeLogModal();}
+function onTimeChange(){
+  const tod=todFromTime(document.getElementById('inputTime').value);
+  document.getElementById('modalTodBadge').textContent=TOD_EMOJI[tod];
+}
+
+function classify(sys,dia){
+  if(!sys||!dia)return{label:'—'};
+  if(sys>180||dia>120)return{label:'Hypertensive crisis'};
+  if(sys>=140||dia>=90)return{label:'High — Stage 2'};
+  if(sys>=130||dia>=80)return{label:'High — Stage 1'};
+  if(sys>=120&&dia<80)return{label:'Elevated'};
+  return{label:'Normal'};
+}
+function classifyColors(label){
+  return({'Normal':{bg:'#dcfce7',color:'#15803d'},'Elevated':{bg:'#fef3c7',color:'#b45309'},'High — Stage 1':{bg:'#ffedd5',color:'#c2410c'},'High — Stage 2':{bg:'#fee2e2',color:'#b91c1c'},'Hypertensive crisis':{bg:'#fecaca',color:'#7f1d1d'}})[label]||{bg:'#f3f4f6',color:'#6b7280'};
+}
+function updateLiveClassify(){
+  const sys=parseInt(document.getElementById('inputSys').value);
+  const dia=parseInt(document.getElementById('inputDia').value);
+  const el=document.getElementById('liveClassify');
+  if(!sys||!dia){el.innerHTML='';return;}
+  const c=classify(sys,dia);const col=classifyColors(c.label);
+  el.innerHTML=`<span style="display:inline-block;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:500;background:${col.bg};color:${col.color}">${sys}/${dia} mmHg — ${c.label}</span>`;
+}
+
+function saveReading(){
+  const sys=parseInt(document.getElementById('inputSys').value);
+  const dia=parseInt(document.getElementById('inputDia').value);
+  const pulse=parseInt(document.getElementById('inputPulse').value)||null;
+  if(!sys||!dia){showToast('Please enter systolic and diastolic values','error');return;}
+  if(sys<60||sys>250||dia<40||dia>150){showToast('Values seem out of range — please check','error');return;}
+  const ts=document.getElementById('inputTime').value;
+  readings.unshift({id:Date.now(),date:document.getElementById('inputDate').value,time:ts,tod:todFromTime(ts),sys,dia,pulse,exercise:document.getElementById('inputExercise').value,diet:document.getElementById('inputDiet').value,stress:document.getElementById('inputStress').value,caffeine:document.getElementById('inputCaffeine').value,notes:document.getElementById('inputNotes').value.trim()});
+  saveLocal();if(accessToken)syncDrive();
+  closeLogModal();
+  ['inputSys','inputDia','inputPulse'].forEach(id=>document.getElementById(id).value='');
+  ['inputExercise','inputDiet','inputStress','inputCaffeine'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('inputNotes').value='';
+  renderAll();showToast('Reading saved ✓');
+  if(sys>180||dia>120)setTimeout(()=>showToast('⚠️ Crisis range — seek medical attention immediately.','error'),600);
+}
+
+async function openScan(){
+  resetScanUI();
+  document.getElementById('scanOverlay').classList.add('open');
+  try{
+    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}});
+    document.getElementById('scanVideo').srcObject=scanStream;
+  }catch(err){
+    document.getElementById('scanStatus').textContent='Camera access denied. Allow camera permission and try again.';
+  }
+}
+function closeScan(){
+  document.getElementById('scanOverlay').classList.remove('open');
+  if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;}
+  document.getElementById('scanVideo').srcObject=null;
+}
+function resetScanUI(){
+  document.getElementById('scanStatus').textContent='Point camera at your monitor display, then tap Capture';
+  document.getElementById('scanResult').classList.remove('show');
+  document.getElementById('scanProcessing').classList.remove('show');
+  document.getElementById('scanActions').innerHTML=`<button class="scan-cap-btn" onclick="captureFrame()"><span style="font-size:20px">📷</span> Capture</button>`;
+}
+async function captureFrame(){
+  const video=document.getElementById('scanVideo');
+  const canvas=document.getElementById('scanCanvas');
+  const vw=video.videoWidth,vh=video.videoHeight;
+  if(!vw){document.getElementById('scanStatus').textContent='Camera not ready yet — try again.';return;}
+
+  // Crop to viewfinder — portrait, slightly narrower to exclude right-side bar scale
+  const cropW=Math.round(vw*0.44);
+  const cropH=Math.round(cropW*4/3);
+  const cropX=Math.round((vw-cropW)/2 - vw*0.03); // shift left slightly to exclude right bar
+  const cropY=Math.round(vh*0.5-cropH*0.58);
+  canvas.width=cropW;canvas.height=cropH;
+  canvas.getContext('2d').drawImage(video,Math.max(0,cropX),Math.max(0,cropY),cropW,cropH,0,0,cropW,cropH);
+
+  document.getElementById('scanProcessing').classList.add('show');
+  document.getElementById('scanStatus').textContent='';
+  document.getElementById('scanActions').innerHTML='';
+
+  // Based on Omron M3 layout (excluding top logo/icons ~25% of box):
+  // SYS digits: 25%–48% of box height
+  // DIA digits: 48%–72% of box height
+  // PULSE digits: 72%–95% of box height
+  async function readRegion(srcCanvas, yStart, yEnd, xStart, xEnd){
+    const scale=5;
+    const rx=Math.round(xStart*srcCanvas.width);
+    const ry=Math.round(yStart*srcCanvas.height);
+    const rw=Math.round((xEnd-xStart)*srcCanvas.width);
+    const rh=Math.round((yEnd-yStart)*srcCanvas.height);
+    const proc=document.createElement('canvas');
+    proc.width=rw*scale;
+    proc.height=rh*scale;
+    const pctx=proc.getContext('2d');
+    pctx.imageSmoothingEnabled=false;
+    pctx.drawImage(srcCanvas,rx,ry,rw,rh,0,0,proc.width,proc.height);
+
+    // Greyscale + invert + threshold for LCD segments
+    const id=pctx.getImageData(0,0,proc.width,proc.height);
+    const d=id.data;
+    // Sample background brightness to determine if light or dark LCD
+    let bgSum=0;
+    for(let s=0;s<20;s++){const si=(s*4);bgSum+=0.299*d[si]+0.587*d[si+1]+0.114*d[si+2];}
+    const bgBright=bgSum/20;
+    const lightBg=bgBright>128; // light background = dark digits (normal LCD)
+
+    for(let i=0;i<d.length;i+=4){
+      const g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2];
+      let v;
+      if(lightBg){
+        // Dark digits on light background — keep dark pixels as black
+        v=g<160?0:255;
+      }else{
+        // Light digits on dark background — invert
+        v=g>100?0:255;
+      }
+      d[i]=d[i+1]=d[i+2]=v;
+    }
+    pctx.putImageData(id,0,0);
+
+    const result=await Tesseract.recognize(proc,'eng',{
+      tessedit_char_whitelist:'0123456789',
+      psm:8,
+      tessedit_pageseg_mode:'8',
+    });
+    const nums=(result.data.text.match(/\d{2,3}/g)||[]);
+    // Return the most plausible number (2-3 digits)
+    return nums.length>0?parseInt(nums[0]):null;
+  }
+
+  try{
+    // Read three regions — exclude top 25% (logo/icons) and right 20% (bar scale)
+    const [sys,dia,pulse]=await Promise.all([
+      readRegion(canvas, 0.25, 0.47, 0.0, 0.78), // SYS
+      readRegion(canvas, 0.47, 0.70, 0.0, 0.78), // DIA
+      readRegion(canvas, 0.70, 0.93, 0.0, 0.78), // PULSE
+    ]);
+
+    document.getElementById('scanProcessing').classList.remove('show');
+
+    const sysOk=sys&&sys>=60&&sys<=250;
+    const diaOk=dia&&dia>=40&&dia<=150;
+
+    if(sysOk&&diaOk){
+      document.getElementById('scanSys').textContent=sys;
+      document.getElementById('scanDia').textContent=dia;
+      document.getElementById('scanPulse').textContent=pulse||'—';
+      document.getElementById('scanResult').classList.add('show');
+      document.getElementById('scanStatus').textContent='Check numbers match your monitor, then confirm.';
+      document.getElementById('scanActions').innerHTML=`<button class="scan-retry-btn" onclick="resetScanUI()">Retry</button><button class="scan-use-btn" onclick="useScan(${sys},${dia},${pulse||'null'})">Confirm & log</button>`;
+    } else {
+      showScanFail(`Detected SYS:${sys||'?'} DIA:${dia||'?'} PULSE:${pulse||'?'} — try filling the box with just the digit area, avoiding the Omron logo at top.`);
+    }
+  }catch(err){
+    document.getElementById('scanProcessing').classList.remove('show');
+    showScanFail('Scan failed. Log manually instead.');
+  }
+}
+function showScanFail(msg){
+  document.getElementById('scanStatus').textContent=msg;
+  document.getElementById('scanActions').innerHTML=`<button class="scan-retry-btn" onclick="resetScanUI()">Try again</button><button class="scan-use-btn" onclick="closeScan();openLogModal()">Enter manually</button>`;
+}
+function useScan(sys,dia,pulse){closeScan();openLogModal({sys,dia,pulse:pulse||''});}
+
+function renderAll(){renderDashboard();renderHistory();renderTrends();}
+
+function renderDashboard(){
+  const el=document.getElementById('latestReading');
+  if(!readings.length){el.innerHTML=`<div class="empty-state"><div style="font-size:32px">📋</div><p>No readings yet — tap <strong>Log reading</strong> below to get started.</p></div>`;return;}
+  const r=readings[0];const c=classify(r.sys,r.dia);const col=classifyColors(c.label);
+  el.innerHTML=`<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;"><div><div style="font-family:'DM Serif Display',serif;font-size:48px;line-height:1;color:${col.color}">${r.sys}/${r.dia}</div><div style="font-size:13px;color:var(--text-2);margin-top:4px">${r.date} · ${r.time} · ${r.tod}${r.pulse?` · ♥ ${r.pulse} bpm`:''}</div></div><span style="display:inline-block;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:500;background:${col.bg};color:${col.color}">${c.label}</span></div>`;
+  ['morning','afternoon','evening'].forEach(tod=>{
+    const cap=tod[0].toUpperCase()+tod.slice(1);
+    const rs=readings.filter(r=>r.tod===tod);
+    const el=document.getElementById('tod'+cap);
+    const elP=document.getElementById('tod'+cap+'Pulse');
+    const elC=document.getElementById('tod'+cap+'Count');
+    if(!rs.length){el.textContent='—';el.style.color='';elP.textContent='';elC.textContent='no readings';return;}
+    const avgSys=Math.round(rs.reduce((a,r)=>a+r.sys,0)/rs.length);
+    const avgDia=Math.round(rs.reduce((a,r)=>a+r.dia,0)/rs.length);
+    const pRs=rs.filter(r=>r.pulse);
+    const col=classifyColors(classify(avgSys,avgDia).label);
+    el.textContent=`${avgSys}/${avgDia}`;el.style.color=col.color;
+    elP.textContent=pRs.length?`♥ ${Math.round(pRs.reduce((a,r)=>a+r.pulse,0)/pRs.length)} bpm`:'';
+    elC.textContent=`${rs.length} reading${rs.length>1?'s':''}`;
+  });
+  const gel=document.getElementById('guidelineSection');
+  const last=readings.slice(0,28);
+  if(!last.length){gel.innerHTML=`<div class="empty-state" style="padding:20px"><p>Log a reading to see guideline comparison</p></div>`;return;}
+  const avgSys=Math.round(last.reduce((a,r)=>a+r.sys,0)/last.length);
+  const avgDia=Math.round(last.reduce((a,r)=>a+r.dia,0)/last.length);
+  const cat=classify(avgSys,avgDia);const col2=classifyColors(cat.label);
+  const sp=Math.min(Math.max((avgSys-80)/120*100,2),98);
+  const dp=Math.min(Math.max((avgDia-40)/90*100,2),98);
+  gel.innerHTML=`<div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap;margin-bottom:16px"><div><div style="font-family:'DM Serif Display',serif;font-size:42px;color:${col2.color}">${avgSys}/${avgDia}</div><div style="font-size:13px;color:var(--text-2)">${last.length} reading${last.length>1?'s':''} (7-day)</div></div><span style="display:inline-block;padding:6px 14px;border-radius:20px;font-size:14px;font-weight:500;background:${col2.bg};color:${col2.color}">${cat.label}</span></div><div style="margin-bottom:8px"><div style="font-size:12px;color:var(--text-2);font-weight:500;margin-bottom:4px">Systolic: ${avgSys} mmHg</div><div class="gb-track"><div style="background:#dcfce7;flex:0.31"></div><div style="background:#fef3c7;flex:0.09"></div><div style="background:#ffedd5;flex:0.10"></div><div style="background:#fee2e2;flex:0.50"></div></div><div class="gb-marker"><div class="gb-needle" style="left:${sp}%"></div><div class="gb-needle-label" style="left:${sp}%">${avgSys}</div></div><div class="gb-labels" style="margin-top:22px"><span>Normal &lt;120</span><span>Elevated 120–129</span><span>Stage 1 130–139</span><span>Stage 2 ≥140</span></div></div><div style="margin-top:24px"><div style="font-size:12px;color:var(--text-2);font-weight:500;margin-bottom:4px">Diastolic: ${avgDia} mmHg</div><div class="gb-track"><div style="background:#dcfce7;flex:0.44"></div><div style="background:#ffedd5;flex:0.11"></div><div style="background:#fee2e2;flex:0.45"></div></div><div class="gb-marker"><div class="gb-needle" style="left:${dp}%"></div><div class="gb-needle-label" style="left:${dp}%">${avgDia}</div></div><div class="gb-labels" style="margin-top:22px"><span>Normal &lt;80</span><span>Stage 1 80–89</span><span>Stage 2 ≥90</span></div></div>`;
+  const ce=document.getElementById('correlationContent');
+  const crs=readings.filter(r=>r.exercise||r.diet||r.stress||r.caffeine);
+  if(crs.length<3){ce.innerHTML=`<div class="empty-state" style="padding:20px"><p>Log ${Math.max(0,3-crs.length)} more reading${3-crs.length!==1?'s':''} with lifestyle data to see patterns</p></div>`;return;}
+  let tips=[];
+  const exRs=crs.filter(r=>r.exercise);if(exRs.length>=2){const a=exRs.filter(r=>r.exercise==='moderate'||r.exercise==='intense'),n=exRs.filter(r=>r.exercise==='none'||r.exercise==='light');if(a.length&&n.length){const d=Math.round(n.reduce((x,r)=>x+r.sys,0)/n.length)-Math.round(a.reduce((x,r)=>x+r.sys,0)/a.length);if(Math.abs(d)>=3)tips.push({icon:'🏃',text:d>0?`Active days show systolic averaging <strong>${d} mmHg lower</strong>.`:`BP slightly higher on active days — try measuring before workouts.`});}}
+  const stRs=crs.filter(r=>r.stress);if(stRs.length>=3){const hi=stRs.filter(r=>parseInt(r.stress)>=4),lo=stRs.filter(r=>parseInt(r.stress)<=2);if(hi.length&&lo.length){const d=Math.round(hi.reduce((a,r)=>a+r.sys,0)/hi.length)-Math.round(lo.reduce((a,r)=>a+r.sys,0)/lo.length);if(d>=3)tips.push({icon:'😰',text:`High-stress days show systolic <strong>${d} mmHg higher</strong> on average.`});}}
+  const caRs=crs.filter(r=>r.caffeine);if(caRs.length>=2){const hi=caRs.filter(r=>r.caffeine==='3'||r.caffeine==='4+'),lo=caRs.filter(r=>r.caffeine==='0'||r.caffeine==='1');if(hi.length&&lo.length){const d=Math.round(hi.reduce((a,r)=>a+r.sys,0)/hi.length)-Math.round(lo.reduce((a,r)=>a+r.sys,0)/lo.length);if(Math.abs(d)>=3)tips.push({icon:'☕',text:`Higher caffeine days show systolic <strong>${Math.abs(d)} mmHg ${d>0?'higher':'lower'}</strong> than low-caffeine days.`});}}
+  const dtRs=crs.filter(r=>r.diet);if(dtRs.length>=2){const po=dtRs.filter(r=>r.diet==='poor'),go=dtRs.filter(r=>r.diet==='good'||r.diet==='excellent');if(po.length&&go.length){const d=Math.round(po.reduce((a,r)=>a+r.sys,0)/po.length)-Math.round(go.reduce((a,r)=>a+r.sys,0)/go.length);if(d>=3)tips.push({icon:'🥗',text:`Better diet days show systolic averaging <strong>${d} mmHg lower</strong>.`});}}
+  if(!tips.length)tips.push({icon:'📊',text:'Keep logging — lifestyle patterns emerge after a week or two.'});
+  ce.innerHTML=tips.map(t=>`<div class="tip-row"><div class="tip-icon">${t.icon}</div><div class="tip-text">${t.text}</div></div>`).join('');
+}
+
+function renderHistory(){
+  const el=document.getElementById('historyTable');
+  const filter=document.getElementById('filterTod').value;
+  const rs=filter?readings.filter(r=>r.tod===filter):readings;
+  if(!rs.length){el.innerHTML=`<div class="empty-state"><p>No readings to show</p></div>`;return;}
+  el.innerHTML=`<table class="log-table"><thead><tr><th>Date</th><th>Time</th><th>Period</th><th>BP (mmHg)</th><th>Pulse</th><th>Status</th><th>Lifestyle</th><th></th></tr></thead><tbody>${rs.map(r=>{const c=classify(r.sys,r.dia);const col=classifyColors(c.label);return`<tr><td>${r.date}</td><td>${r.time}</td><td style="text-transform:capitalize">${r.tod}</td><td style="font-weight:500">${r.sys}/${r.dia}</td><td>${r.pulse||'—'}</td><td><span class="bp-chip" style="background:${col.bg};color:${col.color}">${c.label}</span></td><td style="color:var(--text-2);font-size:12px">${[r.exercise,r.diet?'diet:'+r.diet:'',r.stress?'stress:'+r.stress:'',r.caffeine?'caf:'+r.caffeine:''].filter(Boolean).join(' · ')}</td><td><button class="btn btn-danger btn-sm" onclick="deleteReading(${r.id})">✕</button></td></tr>`;}).join('')}</tbody></table>`;
+}
+function deleteReading(id){if(!confirm('Delete this reading?'))return;readings=readings.filter(r=>r.id!==id);saveLocal();if(accessToken)syncDrive();renderAll();showToast('Reading deleted');}
+
+function renderTrends(){
+  const tc=document.getElementById('trendChart').getContext('2d');
+  if(trendCI)trendCI.destroy();
+  const rs=[...readings].reverse().slice(-30);
+  if(rs.length)trendCI=new Chart(tc,{type:'line',data:{labels:rs.map(r=>r.date+' '+r.time.slice(0,5)),datasets:[{label:'Systolic',data:rs.map(r=>r.sys),borderColor:'#c0392b',backgroundColor:'rgba(192,57,43,0.08)',tension:0.3,pointRadius:4},{label:'Diastolic',data:rs.map(r=>r.dia),borderColor:'#2563eb',backgroundColor:'rgba(37,99,235,0.06)',tension:0.3,pointRadius:4},{label:'Pulse',data:rs.map(r=>r.pulse||null),borderColor:'#9a9ab0',backgroundColor:'transparent',tension:0.3,pointRadius:3,borderDash:[4,4]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'DM Sans'},boxWidth:12}}},scales:{x:{ticks:{maxTicksLimit:8,font:{size:11},maxRotation:30}},y:{beginAtZero:false,min:50}}}});
+  const bc=document.getElementById('bellChart').getContext('2d');
+  if(bellCI)bellCI.destroy();
+  const tods=['morning','afternoon','evening'];
+  bellCI=new Chart(bc,{type:'bar',data:{labels:['Morning','Afternoon','Evening'],datasets:[{label:'Avg systolic',data:tods.map(t=>{const rs=readings.filter(r=>r.tod===t);return rs.length?Math.round(rs.reduce((a,r)=>a+r.sys,0)/rs.length):null;}),backgroundColor:'rgba(192,57,43,0.7)',borderRadius:8},{label:'Avg diastolic',data:tods.map(t=>{const rs=readings.filter(r=>r.tod===t);return rs.length?Math.round(rs.reduce((a,r)=>a+r.dia,0)/rs.length):null;}),backgroundColor:'rgba(37,99,235,0.6)',borderRadius:8}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{family:'DM Sans'},boxWidth:12}}},scales:{y:{beginAtZero:false,min:50},x:{grid:{display:false}}}}});
+  const cc=document.getElementById('catChart').getContext('2d');
+  if(catCI)catCI.destroy();
+  const cats=['Normal','Elevated','High — Stage 1','High — Stage 2','Hypertensive crisis'];
+  catCI=new Chart(cc,{type:'bar',data:{labels:cats.map(c=>c.replace('High — ','H-').replace('Hypertensive crisis','Crisis')),datasets:[{data:cats.map(c=>readings.filter(r=>classify(r.sys,r.dia).label===c).length),backgroundColor:['#dcfce7','#fef3c7','#ffedd5','#fee2e2','#fecaca'],borderColor:['#15803d','#b45309','#c2410c','#b91c1c','#7f1d1d'],borderWidth:1.5,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{stepSize:1}},x:{ticks:{font:{size:11}}}}}});
+}
+
+function populateProfile(){
+  document.getElementById('profileName').value=profile.name||'';
+  document.getElementById('profileAge').value=profile.age||44;
+  document.getElementById('profileHeight').value=profile.height||'';
+  document.getElementById('profileWeight').value=profile.weight||'';
+  document.getElementById('profileSex').value=profile.sex||'male';
+  document.getElementById('profileDoctor').value=profile.doctor||'';
+}
+function saveProfile(){
+  profile={name:document.getElementById('profileName').value,age:parseInt(document.getElementById('profileAge').value)||44,height:document.getElementById('profileHeight').value,weight:document.getElementById('profileWeight').value,sex:document.getElementById('profileSex').value,doctor:document.getElementById('profileDoctor').value};
+  saveLocal();if(accessToken)syncDrive();showToast('Profile saved ✓');
+}
+
+function exportCSV(){
+  if(!readings.length){showToast('No data to export','error');return;}
+  const h=['Date','Time','Period','Systolic','Diastolic','Pulse','Classification','Exercise','Diet','Stress','Caffeine','Notes'];
+  const rows=readings.map(r=>[r.date,r.time,r.tod,r.sys,r.dia,r.pulse||'',classify(r.sys,r.dia).label,r.exercise||'',r.diet||'',r.stress||'',r.caffeine||'',(r.notes||'').replace(/,/g,' ')].join(','));
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([[h.join(','),...rows].join('\n')],{type:'text/csv'}));
+  a.download=`bp-readings-${new Date().toISOString().slice(0,10)}.csv`;a.click();showToast('CSV exported ✓');
+}
+function clearAllData(){if(!confirm('Delete ALL readings? Cannot be undone.'))return;readings=[];saveLocal();if(accessToken)syncDrive();renderAll();showToast('All data cleared');}
+
+let tokenExpiry=null;
+
+function handleAuth(){
+  if(!tokenClient){
+    try{initGIS();}catch(e){showToast('Google sign-in not ready yet — try again in a moment','error');return;}
+  }
+  tokenClient.requestAccessToken();
+}
+function onTokenReceived(resp){
+  if(resp.error){showToast('Drive connection failed: '+resp.error,'error');return;}
+  accessToken=resp.access_token;
+  tokenExpiry=Date.now()+(resp.expires_in?resp.expires_in*1000:3500*1000);
+  document.getElementById('authStatus').textContent='Connected to Drive';
+  document.getElementById('authStatus').className='auth-status connected';
+  document.getElementById('authBtn').textContent='Sync now';
+  document.getElementById('driveBar').className='drive-bar success';
+  document.getElementById('driveBar').innerHTML='<div class="drive-info"><strong>Google Drive connected.</strong> Readings sync automatically across devices.</div>';
+  const mob=document.getElementById('mobileAuthRow');
+  if(mob)mob.style.display='none';
+  const lb=document.getElementById('loadBtn');
+  if(lb)lb.style.display='inline-flex';
+  syncDrive();
+}
+
+// Ensure token is fresh before any Drive call — silently refreshes if expired
+function ensureFreshToken(){
+  return new Promise((resolve,reject)=>{
+    if(accessToken&&tokenExpiry&&Date.now()<tokenExpiry-60000){
+      resolve();return;
+    }
+    // Token expired or about to — request a new one silently
+    if(!tokenClient){try{initGIS();}catch(e){reject(e);return;}}
+    const origCallback=tokenClient.callback;
+    tokenClient.callback=(resp)=>{
+      tokenClient.callback=origCallback;
+      if(resp.error){reject(new Error(resp.error));return;}
+      accessToken=resp.access_token;
+      tokenExpiry=Date.now()+(resp.expires_in?resp.expires_in*1000:3500*1000);
+      resolve();
+    };
+    tokenClient.requestAccessToken({prompt:''});
+  });
+}
+
+async function syncDrive(){
+  if(!accessToken)return;
+  try{
+    await ensureFreshToken();
+  }catch(e){
+    showToast('Drive session expired — tap Connect Google Drive to reconnect','error');
+    return;
+  }
+  const payload=JSON.stringify({readings,profile});
+  try{
+    if(driveFileId){
+      const r=await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{method:'PATCH',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:payload});
+      if(r.status===401){accessToken=null;showToast('Drive session expired — tap Connect Google Drive to reconnect','error');return;}
+      showToast('Saved to Drive ✓');return;
+    }
+    const sd=await(await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${FILE_NAME}'&spaces=drive&fields=files(id)`,{headers:{Authorization:`Bearer ${accessToken}`}})).json();
+    if(sd.files&&sd.files.length){
+      driveFileId=sd.files[0].id;
+      // Always push local data — phone is the writer in this session
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{method:'PATCH',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:payload});
+      showToast('Synced to Drive ✓');
+      saveLocal();
+    }else{
+      const md=await(await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({name:FILE_NAME,mimeType:'application/json'})})).json();
+      driveFileId=md.id;
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,{method:'PATCH',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:payload});
+      saveLocal();showToast('Drive file created ✓');
+    }
+  }catch(e){
+    showToast('Drive sync failed — check your connection','error');
+  }
+}
+
+// ─── IMPORT ───
+let importParsed = [];
+
+function openImport(){
+  importParsed=[];
+  document.getElementById('importStep1').classList.add('active');
+  document.getElementById('importStep2').classList.remove('active');
+  document.getElementById('importFeedback').innerHTML='';
+  document.getElementById('importFileInput').value='';
+  document.getElementById('importActionBtn').textContent='Import readings';
+  document.getElementById('importBackBtn').style.display='flex';
+  document.getElementById('importModal').classList.add('open');
+}
+function closeImport(){document.getElementById('importModal').classList.remove('open');}
+function onImportOverlayClick(e){if(e.target===document.getElementById('importModal'))closeImport();}
+function importGoBack(){
+  document.getElementById('importStep2').classList.remove('active');
+  document.getElementById('importStep1').classList.add('active');
+  document.getElementById('importActionBtn').textContent='Import readings';
+}
+function onDragOver(e){e.preventDefault();document.getElementById('importDrop').classList.add('drag');}
+function onDragLeave(){document.getElementById('importDrop').classList.remove('drag');}
+function onFileDrop(e){e.preventDefault();document.getElementById('importDrop').classList.remove('drag');const f=e.dataTransfer.files[0];if(f)processImportFile(f);}
+function onFileSelect(e){const f=e.target.files[0];if(f)processImportFile(f);}
+
+function processImportFile(file){
+  if(!file.name.endsWith('.csv')){
+    document.getElementById('importFeedback').innerHTML=`<div class="import-result error">Please select a CSV file. In Google Sheets: File → Download → Comma Separated Values (.csv)</div>`;
+    return;
+  }
+  const reader=new FileReader();
+  reader.onload=function(e){
+    const text=e.target.result;
+    parseImportCSV(text);
+  };
+  reader.readAsText(file);
+}
+
+function parseImportCSV(text){
+  const lines=text.trim().split(/\r?\n/);
+  if(lines.length<2){
+    document.getElementById('importFeedback').innerHTML=`<div class="import-result error">The file appears to be empty or has only one row.</div>`;
+    return;
+  }
+
+  // Parse header row — flexible matching
+  const headers=lines[0].split(',').map(h=>h.trim().toLowerCase().replace(/['"]/g,''));
+  const colMap={};
+  headers.forEach((h,i)=>{
+    if(h.includes('date'))                                    colMap.date=i;
+    else if(h.includes('time'))                               colMap.time=i;
+    else if(h.includes('sys'))                                colMap.sys=i;
+    else if(h.includes('dia'))                                colMap.dia=i;
+    else if(h.includes('pul'))                                colMap.pulse=i;
+    else if(h.includes('note')||h.includes('comment'))        colMap.notes=i;
+    else if(h.includes('exercise')||h.includes('activity'))   colMap.exercise=i;
+    else if(h.includes('diet')||h.includes('food'))           colMap.diet=i;
+    else if(h.includes('stress'))                             colMap.stress=i;
+    else if(h.includes('caffeine')||h.includes('coffee'))     colMap.caffeine=i;
+  });
+
+  if(colMap.date===undefined||colMap.sys===undefined||colMap.dia===undefined){
+    document.getElementById('importFeedback').innerHTML=`<div class="import-result error">Couldn't find the required columns (Date, Systolic, Diastolic). Make sure your sheet has these column headers and try again.</div>`;
+    return;
+  }
+
+  // Parse data rows
+  const parsed=[];
+  const skipped=[];
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim())continue;
+    // Handle quoted fields
+    const cols=lines[i].match(/(".*?"|[^,]+|(?<=,)(?=,)|^(?=,)|(?<=,)$)/g)||lines[i].split(',');
+    const clean=cols.map(c=>(c||'').trim().replace(/^"|"$/g,''));
+
+    const dateRaw=(clean[colMap.date]||'').trim();
+    const timeRaw=colMap.time!==undefined?(clean[colMap.time]||'').trim():'';
+    const sysRaw=parseInt(clean[colMap.sys]);
+    const diaRaw=parseInt(clean[colMap.dia]);
+    const pulseRaw=colMap.pulse!==undefined?parseInt(clean[colMap.pulse])||null:null;
+    const notesRaw=colMap.notes!==undefined?(clean[colMap.notes]||'').trim():'';
+
+    if(!dateRaw||isNaN(sysRaw)||isNaN(diaRaw)){skipped.push(i+1);continue;}
+    if(sysRaw<60||sysRaw>250||diaRaw<40||diaRaw>150){skipped.push(i+1);continue;}
+
+    // Normalise date to YYYY-MM-DD
+    let dateNorm=dateRaw;
+    // Handle DD/MM/YYYY or MM/DD/YYYY
+    const dParts=dateRaw.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if(dParts){
+      const y=dParts[3].length===2?'20'+dParts[3]:dParts[3];
+      // Assume YYYY-MM-DD if already that format, else try DD/MM/YYYY
+      dateNorm=`${y}-${dParts[1].padStart(2,'0')}-${dParts[2].padStart(2,'0')}`;
+    }
+
+    // Normalise time to HH:MM 24h
+    let timeNorm='08:00';
+    if(timeRaw){
+      const t12=timeRaw.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      const t24=timeRaw.match(/^(\d{1,2}):(\d{2})$/);
+      if(t12){
+        let h=parseInt(t12[1]);
+        const m=t12[2];
+        const ampm=t12[3].toUpperCase();
+        if(ampm==='AM'&&h===12)h=0;
+        if(ampm==='PM'&&h!==12)h+=12;
+        timeNorm=`${String(h).padStart(2,'0')}:${m}`;
+      } else if(t24){
+        timeNorm=`${t24[1].padStart(2,'0')}:${t24[2]}`;
+      }
+    }
+
+    parsed.push({
+      id:Date.now()+i,
+      date:dateNorm,
+      time:timeNorm,
+      tod:todFromTime(timeNorm),
+      sys:sysRaw,
+      dia:diaRaw,
+      pulse:pulseRaw,
+      notes:notesRaw,
+      exercise:colMap.exercise!==undefined?(clean[colMap.exercise]||''):'',
+      diet:colMap.diet!==undefined?(clean[colMap.diet]||''):'',
+      stress:colMap.stress!==undefined?(clean[colMap.stress]||''):'',
+      caffeine:colMap.caffeine!==undefined?(clean[colMap.caffeine]||''):'',
+    });
+  }
+
+  if(!parsed.length){
+    document.getElementById('importFeedback').innerHTML=`<div class="import-result error">No valid readings found. Check that your data has valid dates and BP values.</div>`;
+    return;
+  }
+
+  importParsed=parsed;
+
+  // Show preview
+  document.getElementById('importStep1').classList.remove('active');
+  document.getElementById('importStep2').classList.add('active');
+
+  const existing=readings.map(r=>r.date+'_'+r.time+'_'+r.sys+'_'+r.dia);
+  const dupes=parsed.filter(r=>existing.includes(r.date+'_'+r.time+'_'+r.sys+'_'+r.dia));
+  const newCount=parsed.length-dupes.length;
+
+  document.getElementById('importSummary').innerHTML=`
+    Found <strong>${parsed.length} valid reading${parsed.length!==1?'s':''}</strong> in your file.
+    ${dupes.length>0?`<span style="color:var(--amber)"> ${dupes.length} appear to already exist and will be skipped.</span>`:''}
+    ${skipped.length>0?`<span style="color:var(--text-3)"> ${skipped.length} row${skipped.length!==1?'s':''} had invalid data and will be skipped.</span>`:''}
+    <br><strong style="color:var(--green)">${newCount} new reading${newCount!==1?'s':''} will be added.</strong>`;
+
+  // Build preview table (first 5 rows)
+  const preview=parsed.slice(0,5);
+  const tbl=document.getElementById('importPreviewTable');
+  tbl.innerHTML=`<thead><tr><th>Date</th><th>Time</th><th>Period</th><th>Systolic</th><th>Diastolic</th><th>Pulse</th><th>Notes</th></tr></thead><tbody>${
+    preview.map(r=>`<tr><td>${r.date}</td><td>${r.time}</td><td style="text-transform:capitalize">${r.tod}</td><td>${r.sys}</td><td>${r.dia}</td><td>${r.pulse||'—'}</td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.notes||'—'}</td></tr>`).join('')
+  }</tbody>`;
+
+  if(newCount===0){
+    document.getElementById('importActionBtn').textContent='Nothing new to import';
+    document.getElementById('importActionBtn').disabled=true;
+  } else {
+    document.getElementById('importActionBtn').textContent=`Add ${newCount} reading${newCount!==1?'s':''}`;
+    document.getElementById('importActionBtn').disabled=false;
+  }
+}
+
+function confirmImport(){
+  if(!importParsed.length)return;
+  const existing=readings.map(r=>r.date+'_'+r.time+'_'+r.sys+'_'+r.dia);
+  const toAdd=importParsed.filter(r=>!existing.includes(r.date+'_'+r.time+'_'+r.sys+'_'+r.dia));
+  if(!toAdd.length){closeImport();showToast('No new readings to add','error');return;}
+
+  // Merge and sort by date+time descending
+  readings=[...readings,...toAdd].sort((a,b)=>{
+    const da=new Date(a.date+'T'+a.time);
+    const db=new Date(b.date+'T'+b.time);
+    return db-da;
+  });
+
+  saveLocal();
+  if(accessToken)syncDrive();
+  renderAll();
+  closeImport();
+  showToast(`${toAdd.length} reading${toAdd.length!==1?'s':''} imported ✓`);
+}
+
+async function loadFromDrive(){
+  if(!accessToken){showToast('Connect Google Drive first','error');return;}
+  try{
+    await ensureFreshToken();
+    const sd=await(await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${FILE_NAME}'&spaces=drive&fields=files(id)`,{headers:{Authorization:`Bearer ${accessToken}`}})).json();
+    if(!sd.files||!sd.files.length){showToast('No Drive file found yet','error');return;}
+    driveFileId=sd.files[0].id;
+    const dd=await(await fetch(`https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,{headers:{Authorization:`Bearer ${accessToken}`}})).json();
+    if(dd.readings&&dd.readings.length){
+      readings=dd.readings;
+      if(dd.profile)profile={...profile,...dd.profile};
+      populateProfile();saveLocal();renderAll();
+      showToast(`Loaded ${readings.length} readings from Drive ✓`);
+    }else{showToast('No readings found in Drive file','error');}
+  }catch(e){showToast('Failed to load from Drive — check connection','error');}
+}
+
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  const idx={dashboard:0,history:1,trends:2,about:3}[name];
+  if(idx!=null)document.querySelectorAll('.nav-btn')[idx].classList.add('active');
+  if(name==='trends')setTimeout(renderTrends,50);
+}
+function showToast(msg,type=''){
+  const el=document.getElementById('toast');el.textContent=msg;
+  el.className='toast show'+(type==='error'?' error':'');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3500);
+}
+</script>
+</body>
+</html>
