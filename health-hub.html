@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Health Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --ink:#1a1a2e;--ink-2:#4a4a6a;--ink-3:#8a8aaa;
+  --bg:#f5f4f0;--card:#ffffff;--border:#e8e6e0;
+  --green:#16a34a;--green-soft:#dcfce7;--green-mid:#15803d;
+  --amber:#b45309;--amber-soft:#fef3c7;
+  --red:#b91c1c;--red-soft:#fee2e2;
+  --blue:#1d4ed8;--blue-soft:#eff6ff;
+  --radius:18px;--shadow:0 2px 16px rgba(0,0,0,0.06);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh;font-size:15px;}
+h1,h2,h3,.serif{font-family:'Fraunces',serif;font-weight:400;}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--ink);padding:16px 20px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.topbar-brand{display:flex;align-items:baseline;gap:10px;}
+.topbar-brand h1{font-size:22px;color:#fff;letter-spacing:-0.5px;}
+.topbar-brand span{font-size:12px;color:rgba(255,255,255,0.4);font-family:'DM Sans',sans-serif;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.auth-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.25);}
+.auth-dot.connected{background:#6ee7b7;}
+.btn-ghost{background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.8);padding:7px 14px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;}
+.btn-ghost:hover{background:rgba(255,255,255,0.18);}
+
+/* ── MAIN ── */
+.main{padding:20px;max-width:860px;margin:0 auto;padding-bottom:40px;}
+
+/* ── VIEWS ── */
+.view{display:none;}
+.view.active{display:block;animation:fadeIn 0.18s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:none;}}
+
+/* ── SECTION HEADER ── */
+.sec-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;}
+.sec-title{font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:var(--ink-3);font-weight:500;font-family:'DM Sans',sans-serif;}
+.sec-link{font-size:12px;color:var(--blue);cursor:pointer;background:none;border:none;font-family:'DM Sans',sans-serif;}
+
+/* ── CARDS ── */
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);box-shadow:var(--shadow);}
+.card+.card{margin-top:12px;}
+.card-pad{padding:18px 20px;}
+
+/* ── BP HERO CARD ── */
+.bp-hero{
+  background:var(--ink);border-radius:var(--radius);
+  padding:20px;margin-bottom:20px;cursor:pointer;
+  position:relative;overflow:hidden;
+  transition:transform 0.15s;
+}
+.bp-hero:hover{transform:translateY(-2px);}
+.bp-hero::after{
+  content:'';position:absolute;right:-30px;top:-30px;
+  width:140px;height:140px;border-radius:50%;
+  background:rgba(255,255,255,0.04);
+}
+.bp-hero-label{font-size:11px;text-transform:uppercase;letter-spacing:0.1em;color:rgba(255,255,255,0.45);margin-bottom:10px;font-family:'DM Sans',sans-serif;}
+.bp-hero-reading{font-family:'Fraunces',serif;font-size:54px;color:#fff;line-height:1;letter-spacing:-2px;}
+.bp-hero-reading span{font-size:18px;opacity:0.5;letter-spacing:0;}
+.bp-hero-meta{display:flex;gap:16px;margin-top:10px;flex-wrap:wrap;}
+.bp-hero-stat{font-size:13px;color:rgba(255,255,255,0.6);}
+.bp-hero-stat strong{color:#fff;font-weight:500;}
+.bp-hero-badge{display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;margin-top:10px;}
+.bp-hero-arrow{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:22px;color:rgba(255,255,255,0.3);}
+.bp-tod-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:14px;}
+.bp-tod{background:rgba(255,255,255,0.07);border-radius:10px;padding:10px 12px;text-align:center;}
+.bp-tod-lbl{font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:rgba(255,255,255,0.35);margin-bottom:4px;}
+.bp-tod-val{font-family:'Fraunces',serif;font-size:18px;color:#fff;}
+.bp-tod-pulse{font-size:11px;color:rgba(255,255,255,0.4);margin-top:1px;}
+
+/* ── ATTENTION SECTION ── */
+.attention-list{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;}
+.attention-item{
+  background:var(--card);border-radius:14px;
+  border:1px solid var(--border);padding:14px 16px;
+  display:flex;justify-content:space-between;align-items:center;
+  cursor:pointer;transition:transform 0.12s;
+}
+.attention-item:hover{transform:translateY(-1px);}
+.attention-item.flagged{border-left:3px solid var(--red);}
+.attention-item.watch{border-left:3px solid var(--amber);}
+.attention-item.improving{border-left:3px solid var(--green);}
+.att-left{}
+.att-name{font-size:14px;font-weight:500;color:var(--ink);}
+.att-sub{font-size:12px;color:var(--ink-3);margin-top:2px;}
+.att-right{text-align:right;}
+.att-val{font-family:'Fraunces',serif;font-size:22px;line-height:1;}
+.att-ref{font-size:11px;color:var(--ink-3);margin-top:2px;}
+.att-trend{font-size:12px;font-weight:500;margin-top:3px;}
+
+/* ── PANEL GRID ── */
+.panel-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px;}
+.panel-card{
+  background:var(--card);border-radius:14px;
+  border:1px solid var(--border);padding:14px 16px;
+  cursor:pointer;transition:transform 0.12s,box-shadow 0.12s;
+}
+.panel-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.09);}
+.panel-icon{font-size:20px;margin-bottom:8px;}
+.panel-name{font-size:14px;font-weight:500;color:var(--ink);margin-bottom:4px;}
+.panel-date{font-size:11px;color:var(--ink-3);margin-bottom:8px;}
+.panel-status{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:500;}
+.panel-status.normal{background:var(--green-soft);color:var(--green-mid);}
+.panel-status.watch{background:var(--amber-soft);color:var(--amber);}
+.panel-status.flagged{background:var(--red-soft);color:var(--red);}
+.panel-metrics{font-size:11px;color:var(--ink-3);margin-top:6px;}
+
+/* ── PANEL DETAIL (Layer 2) ── */
+.back-btn{display:flex;align-items:center;gap:8px;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--ink-2);cursor:pointer;padding:0;}
+.back-btn:hover{color:var(--ink);}
+.nav-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.home-btn{display:flex;align-items:center;gap:6px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--ink-2);cursor:pointer;}
+.home-btn:hover{color:var(--ink);background:var(--border);}
+.metric-explainer{background:var(--blue-soft);border:1px solid #bfdbfe;border-radius:14px;padding:16px;margin-top:12px;}
+.metric-explainer-title{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:#1d4ed8;margin-bottom:8px;}
+.metric-explainer-text{font-size:13px;color:#1e3a8a;line-height:1.7;}
+.metric-advice{background:#f0fdf4;border:1px solid #86efac;border-radius:14px;padding:16px;margin-top:10px;}
+.metric-advice-title{font-size:12px;font-weight:500;text-transform:uppercase;letter-spacing:0.07em;color:#15803d;margin-bottom:8px;}
+.metric-advice-text{font-size:13px;color:#14532d;line-height:1.7;}
+.metric-advice.warn{background:#fffbeb;border-color:#fcd34d;}
+.metric-advice.warn .metric-advice-title{color:#92400e;}
+.metric-advice.warn .metric-advice-text{color:#78350f;}
+.panel-detail-header{margin-bottom:16px;}
+.panel-detail-title{font-family:'Fraunces',serif;font-size:26px;letter-spacing:-0.5px;margin-bottom:4px;}
+.panel-detail-sub{font-size:13px;color:var(--ink-3);}
+
+.metric-list{display:flex;flex-direction:column;gap:10px;}
+.metric-item{
+  background:var(--card);border-radius:14px;
+  border:1px solid var(--border);padding:14px 16px;
+  cursor:pointer;transition:transform 0.12s;
+}
+.metric-item:hover{transform:translateY(-1px);}
+.metric-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+.metric-name{font-size:14px;font-weight:500;color:var(--ink);}
+.metric-val-wrap{text-align:right;}
+.metric-val{font-family:'Fraunces',serif;font-size:22px;line-height:1;}
+.metric-val.normal{color:var(--green);}
+.metric-val.watch{color:var(--amber);}
+.metric-val.flagged{color:var(--red);}
+.metric-unit{font-size:11px;color:var(--ink-3);margin-left:3px;}
+.metric-flag{font-size:11px;font-weight:500;margin-top:2px;}
+.metric-flag.low{color:var(--red);}
+.metric-flag.high{color:var(--amber);}
+
+/* Range bar */
+.range-bar-wrap{margin-bottom:4px;}
+.range-bar{position:relative;height:8px;border-radius:4px;background:var(--bg);}
+.range-normal{position:absolute;height:100%;border-radius:4px;background:#dcfce7;}
+.range-low{position:absolute;left:0;height:100%;border-radius:4px 0 0 4px;background:#fee2e2;}
+.range-high{position:absolute;right:0;height:100%;border-radius:0 4px 4px 0;background:#fee2e2;}
+.range-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:12px;height:12px;border-radius:50%;border:2px solid var(--card);z-index:2;}
+.range-dot.normal{background:var(--green);}
+.range-dot.watch{background:var(--amber);}
+.range-dot.flagged{background:var(--red);}
+.range-dot.prev{background:var(--ink-3);width:8px;height:8px;opacity:0.5;}
+.range-labels{display:flex;justify-content:space-between;margin-top:3px;}
+.range-labels span{font-size:10px;color:var(--ink-3);}
+.metric-prev{font-size:11px;color:var(--ink-3);margin-top:4px;}
+
+/* ── METRIC TREND (Layer 3) ── */
+.trend-header{margin-bottom:16px;}
+.trend-title{font-family:'Fraunces',serif;font-size:24px;letter-spacing:-0.5px;margin-bottom:2px;}
+.trend-sub{font-size:13px;color:var(--ink-3);}
+.trend-chart-wrap{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:16px;margin-bottom:12px;}
+.trend-insight{background:var(--card);border-radius:14px;border:1px solid var(--border);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;}
+.trend-insight-icon{font-size:22px;flex-shrink:0;}
+.trend-insight-text{font-size:13px;color:var(--ink-2);line-height:1.6;}
+.trend-insight-text strong{color:var(--ink);}
+.trend-all-vals{background:var(--card);border-radius:14px;border:1px solid var(--border);margin-top:10px;}
+.trend-val-row{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);}
+.trend-val-row:last-child{border-bottom:none;}
+.trend-val-date{font-size:13px;color:var(--ink-2);}
+.trend-val-num{font-family:'Fraunces',serif;font-size:20px;}
+
+/* ── PDF IMPORT ── */
+.import-overlay{position:fixed;inset:0;background:rgba(10,10,20,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity 0.2s;}
+.import-overlay.open{opacity:1;pointer-events:all;}
+.import-sheet{background:var(--card);width:100%;max-width:540px;border-radius:20px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2);}
+.import-header{padding:20px 24px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
+.import-title{font-family:'Fraunces',serif;font-size:20px;}
+.import-body{padding:20px 24px;}
+.import-footer{padding:14px 24px 20px;border-top:1px solid var(--border);display:flex;gap:10px;}
+.import-drop{border:2px dashed var(--border);border-radius:14px;padding:36px 20px;text-align:center;cursor:pointer;transition:border-color 0.15s;background:var(--bg);}
+.import-drop:hover,.import-drop.drag{border-color:var(--ink);}
+.import-drop-icon{font-size:36px;margin-bottom:10px;}
+.import-drop-text{font-size:15px;color:var(--ink-2);}
+.import-drop-sub{font-size:12px;color:var(--ink-3);margin-top:4px;}
+.import-step{display:none;}.import-step.active{display:block;}
+.import-preview-table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px;}
+.import-preview-table th{text-align:left;padding:7px 8px;font-size:10px;text-transform:uppercase;letter-spacing:0.07em;color:var(--ink-3);font-weight:500;border-bottom:1px solid var(--border);}
+.import-preview-table td{padding:8px 8px;border-bottom:1px solid #f5f4f0;color:var(--ink-2);}
+.import-preview-table tr:last-child td{border-bottom:none;}
+.result-box{padding:14px 16px;border-radius:12px;margin-top:12px;font-size:13px;line-height:1.6;}
+.result-box.success{background:var(--green-soft);color:var(--green-mid);}
+.result-box.error{background:var(--red-soft);color:var(--red);}
+.result-box.warning{background:var(--amber-soft);color:var(--amber);}
+.processing-indicator{text-align:center;padding:30px;color:var(--ink-3);}
+.spin{width:28px;height:28px;border:2.5px solid var(--border);border-top-color:var(--ink);border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;margin-bottom:10px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ── BUTTONS ── */
+.btn{padding:11px 22px;border-radius:10px;border:none;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all 0.15s;}
+.btn-primary{background:var(--ink);color:white;}.btn-primary:hover{background:#2d2d4a;}
+.btn-secondary{background:var(--border);color:var(--ink);}.btn-secondary:hover{background:#d8d6d0;}
+.btn-sm{padding:7px 14px;font-size:13px;border-radius:8px;}
+.btn-green{background:var(--green-soft);color:var(--green-mid);border:none;}
+.btn-green:hover{background:#bbf7d0;}
+
+/* ── APPLE HEALTH ── */
+.apple-health-btn{display:none;}
+.apple-health-btn.visible{display:flex;}
+.health-sync-bar{background:#fff0f5;border:1px solid #fbc5d8;border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap;}
+.health-sync-info{font-size:13px;color:#9d174d;}
+.health-sync-info strong{color:#831843;}
+
+/* ── DRIVE STATUS ── */
+.drive-bar{background:var(--blue-soft);border:1px solid #bfdbfe;border-radius:10px;padding:11px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.drive-bar.success{background:var(--green-soft);border-color:#86efac;}
+.drive-info{font-size:13px;color:var(--ink-2);}
+.drive-info strong{color:var(--ink);}
+.drive-actions{display:flex;gap:8px;flex-wrap:wrap;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:20px;background:var(--ink);color:white;padding:12px 18px;border-radius:10px;font-size:14px;z-index:3000;transform:translateY(20px);opacity:0;transition:all 0.3s;pointer-events:none;max-width:280px;}
+.toast.show{transform:translateY(0);opacity:1;}
+.toast.error{background:var(--red);}
+.toast.success{background:var(--green);}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:40px 20px;color:var(--ink-3);}
+.empty-state p{margin-top:8px;font-size:14px;}
+
+/* ── FAB ── */
+.fab-wrap{position:fixed;bottom:24px;right:20px;display:flex;flex-direction:column;gap:10px;align-items:flex-end;z-index:400;}
+.fab{display:flex;align-items:center;gap:8px;padding:0 20px;height:50px;border:none;border-radius:25px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:500;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,0.15);transition:transform 0.15s;white-space:nowrap;}
+.fab:hover{transform:translateY(-2px);}
+.fab-main{background:var(--ink);color:white;}
+.fab-health{background:white;color:#9d174d;border:1px solid #fbc5d8;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:500px){
+  .main{padding:14px;padding-bottom:80px;}
+  .panel-grid{grid-template-columns:1fr;}
+  .bp-hero-reading{font-size:42px;}
+  .bp-tod-row{gap:6px;}
+}
+@media print{
+  .topbar,.fab-wrap,.import-overlay{display:none!important;}
+  .main{padding:0;max-width:100%;}
+  .card{box-shadow:none;}
+}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-brand" onclick="showView('dashboard')" style="cursor:pointer;" title="Go to dashboard">
+    <h1>Health Hub</h1>
+    <span>by Maz</span>
+  </div>
+  <div class="topbar-right">
+    <div class="auth-dot" id="authDot"></div>
+    <button class="btn-ghost" id="authBtn" onclick="handleAuth()">Connect Drive</button>
+    <button class="btn-ghost" id="loadBtn" onclick="loadFromDrive()" style="display:none">Load</button>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- ══ DASHBOARD ══ -->
+  <div class="view active" id="view-dashboard">
+
+    <div class="drive-bar" id="driveBar">
+      <div class="drive-info"><strong>Google Drive not connected.</strong> Data saves locally. Connect Drive to sync across devices.</div>
+      <div class="drive-actions">
+        <button class="btn btn-sm btn-primary" onclick="handleAuth()" id="mobileAuthBtn">Connect</button>
+      </div>
+    </div>
+
+    <!-- Apple Health sync bar — only shown on iOS -->
+    <div class="health-sync-bar" id="healthSyncBar" style="display:none">
+      <div class="health-sync-info"><strong>Apple Health</strong> — push your latest BP readings to the Health app</div>
+      <button class="btn btn-sm" style="background:#ff2d55;color:white;border:none;border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;" onclick="pushToAppleHealth()">❤ Sync now</button>
+    </div>
+
+    <!-- BP Hero -->
+    <div class="sec-header">
+      <span class="sec-title">Blood pressure</span>
+    </div>
+    <div class="bp-hero" onclick="openBPTracker()" id="bpHero">
+      <div class="bp-hero-label">Latest reading</div>
+      <div id="bpHeroContent">
+        <div style="font-family:'Fraunces',serif;font-size:22px;color:rgba(255,255,255,0.5);padding:10px 0;">No BP readings yet</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.3);margin-top:4px;">Open BP Tracker to log your first reading →</div>
+      </div>
+      <div class="bp-hero-arrow">→</div>
+    </div>
+
+    <!-- Needs attention -->
+    <div id="attentionSection" style="display:none;margin-bottom:20px;">
+      <div class="sec-header">
+        <span class="sec-title">Needs attention</span>
+      </div>
+      <div class="attention-list" id="attentionList"></div>
+    </div>
+
+    <!-- Blood test panels -->
+    <div class="sec-header">
+      <span class="sec-title">Blood test panels</span>
+      <button class="sec-link" onclick="openImport()">+ Add results</button>
+    </div>
+    <div id="panelGrid" class="panel-grid"></div>
+
+    <div id="noPanels" class="empty-state" style="display:none;">
+      <div style="font-size:36px;">🧪</div>
+      <p>No blood test results yet.</p>
+      <p style="margin-top:8px;"><button class="btn btn-primary btn-sm" onclick="openImport()">Upload pathology report</button></p>
+    </div>
+
+  </div>
+
+  <!-- ══ PANEL DETAIL ══ -->
+  <div class="view" id="view-panel">
+    <div class="nav-row">
+      <button class="back-btn" onclick="showView('dashboard')">← Back</button>
+      <button class="home-btn" onclick="showView('dashboard')">⌂ Home</button>
+    </div>
+    <div class="panel-detail-header">
+      <div class="panel-detail-title" id="panelDetailTitle"></div>
+      <div class="panel-detail-sub" id="panelDetailSub"></div>
+    </div>
+    <div class="metric-list" id="metricList"></div>
+  </div>
+
+  <!-- ══ METRIC TREND ══ -->
+  <div class="view" id="view-metric">
+    <div class="nav-row">
+      <button class="back-btn" id="metricBackBtn" onclick="goBackFromMetric()">← Back</button>
+      <button class="home-btn" onclick="showView('dashboard')">⌂ Home</button>
+    </div>
+    <div class="trend-header">
+      <div class="trend-title" id="metricTrendTitle"></div>
+      <div class="trend-sub" id="metricTrendSub"></div>
+    </div>
+    <div class="trend-chart-wrap">
+      <div style="position:relative;height:200px;"><canvas id="metricTrendChart"></canvas></div>
+    </div>
+    <div class="trend-insight" id="metricInsight"></div>
+    <div id="metricExplainer"></div>
+    <div id="metricAdvice"></div>
+    <div class="trend-all-vals" id="metricAllVals" style="margin-top:12px;"></div>
+  </div>
+
+</div>
+
+<!-- FAB -->
+<div class="fab-wrap no-print">
+  <button class="fab fab-main" onclick="openImport()">+ Add blood test</button>
+</div>
+
+<!-- ══ IMPORT MODAL ══ -->
+<div class="import-overlay" id="importModal" onclick="onImportOverlayClick(event)">
+  <div class="import-sheet">
+    <div class="import-header">
+      <span class="import-title">Add blood test results</span>
+      <button class="btn btn-sm btn-secondary" onclick="closeImport()">✕</button>
+    </div>
+    <div class="import-body">
+      <div class="import-step active" id="importStep1">
+        <div style="background:var(--bg);border-radius:12px;padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--ink-2);line-height:1.8;border:1px solid var(--border);">
+          <div style="font-weight:500;color:var(--ink);margin-bottom:6px;">How to add your blood test results</div>
+          <div><strong>Step 1</strong> — Open a new Claude.ai conversation</div>
+          <div><strong>Step 2</strong> — Upload a photo of just your results table (crop out your name, address and Medicare number at the top)</div>
+          <div><strong>Step 3</strong> — Send this message: <span style="font-family:monospace;background:var(--card);padding:2px 6px;border-radius:4px;font-size:12px;">Extract my blood test results as JSON using the health hub format</span></div>
+          <div><strong>Step 4</strong> — Copy Claude's JSON output and paste it below</div>
+        </div>
+        <div style="font-size:12px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">Paste JSON here</div>
+        <textarea id="importPasteBox"
+          placeholder='{"panels": [{"name": "Lipid Studies", "metrics": [...]}]}'
+          style="width:100%;height:160px;padding:12px;border:1.5px solid var(--border);border-radius:12px;font-family:monospace;font-size:12px;color:var(--ink);background:var(--bg);resize:vertical;outline:none;line-height:1.5;"
+          oninput="onPasteInput()"></textarea>
+        <div id="importFeedback" style="margin-top:8px;"></div>
+      </div>
+
+      <div class="import-step" id="importStep2">
+        <div id="importPreview">
+          <div id="importSummary" style="font-size:14px;color:var(--ink-2);margin-bottom:14px;line-height:1.6;"></div>
+          <div style="font-size:11px;font-weight:500;color:var(--ink-3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:8px;">Preview</div>
+          <div style="overflow-x:auto;">
+            <table class="import-preview-table" id="importPreviewTable"></table>
+          </div>
+          <div id="importWarnings"></div>
+        </div>
+      </div>
+    </div>
+    <div class="import-footer" id="importFooter">
+      <button class="btn btn-secondary" style="flex:1" onclick="closeImport()">Cancel</button>
+      <button class="btn btn-primary" style="flex:2" id="importActionBtn" onclick="handleImportAction()">Preview results</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<script>
+// ─── CONFIG ───
+const GAPI_CLIENT_ID = '193357906745-tpbdt6pg3r6tj58se2r9j1ra829lgm56.apps.googleusercontent.com';
+const GAPI_API_KEY   = 'AIzaSyBeyMDar1s0dXj1lRB3AoTWRB5nanTYQUU';
+const DRIVE_SCOPE    = 'https://www.googleapis.com/auth/drive.file';
+const BP_FILE_NAME   = 'bp-tracker-data.json';
+const HUB_FILE_NAME  = 'health-hub-data.json';
+const BP_TRACKER_URL = 'https://smazhara2026.github.io/bp-tracker/bp-tracker.html';
+
+// ─── STATE ───
+let bpReadings=[], panels=[], labDates=[];
+let accessToken=null, tokenExpiry=null, tokenClient=null;
+let bpDriveFileId=null, hubDriveFileId=null;
+let currentPanel=null, currentMetric=null, previousView=null;
+let metricChartInst=null;
+
+// ─── INIT ───
+window.addEventListener('DOMContentLoaded',()=>{
+  loadLocal();
+  detectAppleHealth();
+  renderDashboard();
+  if(window.google&&window.google.accounts)initGIS();
+});
+
+// ─── APPLE HEALTH DETECTION ───
+function detectAppleHealth(){
+  const isIOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
+  if(isIOS){
+    document.getElementById('healthSyncBar').style.display='flex';
+  }
+}
+
+function pushToAppleHealth(){
+  if(!bpReadings.length){showToast('No BP readings to sync','error');return;}
+  const r=bpReadings[0];
+  // Use Apple Shortcuts deep link — passes values to a Shortcut named "Log BP"
+  // User needs to create this Shortcut once (we'll provide instructions)
+  const url=`shortcuts://run-shortcut?name=Log%20BP&input=text&text=${r.sys}/${r.dia}/${r.pulse||0}/${r.date}`;
+  window.location.href=url;
+  showToast('Opening Apple Health shortcut…');
+}
+
+// ─── LOCAL STORAGE ───
+function loadLocal(){
+  try{
+    const bp=localStorage.getItem('bp_readings'); if(bp)bpReadings=JSON.parse(bp);
+    const hub=localStorage.getItem('hub_panels'); if(hub)panels=JSON.parse(hub);
+    const bf=localStorage.getItem('bp_drive_fid'); if(bf)bpDriveFileId=bf;
+    const hf=localStorage.getItem('hub_drive_fid'); if(hf)hubDriveFileId=hf;
+  }catch(e){}
+}
+function saveLocal(){
+  localStorage.setItem('hub_panels',JSON.stringify(panels));
+  if(hubDriveFileId)localStorage.setItem('hub_drive_fid',hubDriveFileId);
+}
+
+// ─── GOOGLE AUTH ───
+function initGIS(){
+  if(!GAPI_CLIENT_ID)return;
+  tokenClient=google.accounts.oauth2.initTokenClient({
+    client_id:GAPI_CLIENT_ID,scope:DRIVE_SCOPE,callback:onTokenReceived
+  });
+}
+function handleAuth(){
+  if(!tokenClient){try{initGIS();}catch(e){showToast('Sign-in not ready — try again','error');return;}}
+  tokenClient.requestAccessToken();
+}
+function onTokenReceived(resp){
+  if(resp.error){showToast('Drive connection failed','error');return;}
+  accessToken=resp.access_token;
+  tokenExpiry=Date.now()+(resp.expires_in?resp.expires_in*1000:3500000);
+  document.getElementById('authDot').classList.add('connected');
+  document.getElementById('authBtn').textContent='Sync now';
+  document.getElementById('loadBtn').style.display='inline-block';
+  document.getElementById('driveBar').className='drive-bar success';
+  document.getElementById('driveBar').innerHTML='<div class="drive-info"><strong>Google Drive connected.</strong> Data syncs automatically.</div><div class="drive-actions"><button class="btn btn-sm btn-green" onclick="loadFromDrive()">Load latest</button></div>';
+  syncDrive();
+}
+async function ensureFreshToken(){
+  return new Promise((resolve,reject)=>{
+    if(accessToken&&tokenExpiry&&Date.now()<tokenExpiry-60000){resolve();return;}
+    if(!tokenClient){try{initGIS();}catch(e){reject(e);return;}}
+    const orig=tokenClient.callback;
+    tokenClient.callback=(resp)=>{
+      tokenClient.callback=orig;
+      if(resp.error){reject(new Error(resp.error));return;}
+      accessToken=resp.access_token;
+      tokenExpiry=Date.now()+(resp.expires_in?resp.expires_in*1000:3500000);
+      resolve();
+    };
+    tokenClient.requestAccessToken({prompt:''});
+  });
+}
+async function syncDrive(){
+  if(!accessToken)return;
+  try{await ensureFreshToken();}catch(e){showToast('Session expired — reconnect Drive','error');return;}
+  // Sync health hub data
+  const hubPayload=JSON.stringify({panels,labDates});
+  try{
+    if(hubDriveFileId){
+      await fetch(`https://www.googleapis.com/upload/drive/v3/files/${hubDriveFileId}?uploadType=media`,{method:'PATCH',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:hubPayload});
+      showToast('Saved to Drive ✓');
+    }else{
+      const sd=await(await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${HUB_FILE_NAME}'&spaces=drive&fields=files(id)`,{headers:{Authorization:`Bearer ${accessToken}`}})).json();
+      if(sd.files&&sd.files.length){
+        hubDriveFileId=sd.files[0].id;
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${hubDriveFileId}?uploadType=media`,{method:'PATCH',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:hubPayload});
+        showToast('Synced to Drive ✓');
+      }else{
+        const md=await(await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:JSON.stringify({name:HUB_FILE_NAME,mimeType:'application/json'})})).json();
+        hubDriveFileId=md.id;
+        await fetch(`https://www.googleapis.com/upload/drive/v3/files/${hubDriveFileId}?uploadType=media`,{method:'PATCH',headers:{Authorization:`Bearer ${accessToken}`,'Content-Type':'application/json'},body:hubPayload});
+        showToast('Drive file created ✓');
+      }
+      saveLocal();
+    }
+  }catch(e){showToast('Drive sync failed','error');}
+}
+async function loadFromDrive(){
+  if(!accessToken){showToast('Connect Drive first','error');return;}
+  try{
+    await ensureFreshToken();
+    // Load BP readings from BP tracker file
+    const bpSd=await(await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${BP_FILE_NAME}'&spaces=drive&fields=files(id)`,{headers:{Authorization:`Bearer ${accessToken}`}})).json();
+    if(bpSd.files&&bpSd.files.length){
+      const bpData=await(await fetch(`https://www.googleapis.com/drive/v3/files/${bpSd.files[0].id}?alt=media`,{headers:{Authorization:`Bearer ${accessToken}`}})).json();
+      if(bpData.readings){bpReadings=bpData.readings;localStorage.setItem('bp_readings',JSON.stringify(bpReadings));}
+    }
+    // Load health hub data
+    const hubSd=await(await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${HUB_FILE_NAME}'&spaces=drive&fields=files(id)`,{headers:{Authorization:`Bearer ${accessToken}`}})).json();
+    if(hubSd.files&&hubSd.files.length){
+      hubDriveFileId=hubSd.files[0].id;
+      const hubData=await(await fetch(`https://www.googleapis.com/drive/v3/files/${hubDriveFileId}?alt=media`,{headers:{Authorization:`Bearer ${accessToken}`}})).json();
+      if(hubData.panels)panels=hubData.panels;
+      if(hubData.labDates)labDates=hubData.labDates;
+      saveLocal();
+    }
+    renderDashboard();
+    showToast('Data loaded from Drive ✓');
+  }catch(e){showToast('Failed to load from Drive','error');}
+}
+
+// ─── CLASSIFY BP ───
+function classifyBP(sys,dia){
+  if(!sys||!dia)return{label:'—',bg:'',color:''};
+  if(sys>180||dia>120)return{label:'Crisis',bg:'#fee2e2',color:'#b91c1c'};
+  if(sys>=140||dia>=90)return{label:'High Stage 2',bg:'#fee2e2',color:'#b91c1c'};
+  if(sys>=130||dia>=80)return{label:'High Stage 1',bg:'#ffedd5',color:'#c2410c'};
+  if(sys>=120&&dia<80)return{label:'Elevated',bg:'#fef3c7',color:'#b45309'};
+  return{label:'Normal',bg:'#dcfce7',color:'#15803d'};
+}
+
+// ─── RENDER DASHBOARD ───
+function renderDashboard(){
+  renderBPHero();
+  renderAttention();
+  renderPanelGrid();
+}
+
+function renderBPHero(){
+  const el=document.getElementById('bpHeroContent');
+  if(!bpReadings.length){
+    el.innerHTML=`<div style="font-family:'Fraunces',serif;font-size:20px;color:rgba(255,255,255,0.4);padding:8px 0;">No readings yet</div><div style="font-size:13px;color:rgba(255,255,255,0.3);margin-top:4px;">Tap to open BP Tracker →</div>`;
+    return;
+  }
+  const r=bpReadings[0];
+  const cat=classifyBP(r.sys,r.dia);
+  const last7=bpReadings.slice(0,28);
+  const avgSys=Math.round(last7.reduce((a,x)=>a+x.sys,0)/last7.length);
+  const avgDia=Math.round(last7.reduce((a,x)=>a+x.dia,0)/last7.length);
+  const avgCat=classifyBP(avgSys,avgDia);
+  const tods=['morning','afternoon','evening'];
+  const todEmoji={morning:'🌅',afternoon:'☀️',evening:'🌙'};
+  const todHtml=tods.map(tod=>{
+    const rs=bpReadings.filter(x=>x.tod===tod);
+    if(!rs.length)return`<div class="bp-tod"><div class="bp-tod-lbl">${todEmoji[tod]}</div><div class="bp-tod-val" style="color:rgba(255,255,255,0.3)">—</div></div>`;
+    const s=Math.round(rs.reduce((a,x)=>a+x.sys,0)/rs.length);
+    const d=Math.round(rs.reduce((a,x)=>a+x.dia,0)/rs.length);
+    return`<div class="bp-tod"><div class="bp-tod-lbl">${todEmoji[tod]} ${tod}</div><div class="bp-tod-val">${s}/${d}</div></div>`;
+  }).join('');
+  el.innerHTML=`
+    <div class="bp-hero-reading">${r.sys}/${r.dia} <span>mmHg</span></div>
+    <div class="bp-hero-meta">
+      <span class="bp-hero-stat">${r.date} · ${r.time}</span>
+      ${r.pulse?`<span class="bp-hero-stat">♥ <strong>${r.pulse}</strong> bpm</span>`:''}
+      <span class="bp-hero-stat">7-day avg <strong>${avgSys}/${avgDia}</strong></span>
+    </div>
+    <span class="bp-hero-badge" style="background:${cat.bg};color:${cat.color}">${cat.label}</span>
+    <div class="bp-tod-row">${todHtml}</div>`;
+}
+
+function renderAttention(){
+  if(!panels.length){document.getElementById('attentionSection').style.display='none';return;}
+  const flagged=[];
+  panels.forEach(panel=>{
+    panel.metrics.forEach(m=>{
+      const latest=m.values[m.values.length-1];
+      if(!latest)return;
+      const st=metricStatus(latest.value,m.refLow,m.refHigh);
+      if(st!=='normal'){
+        const prev=m.values.length>1?m.values[m.values.length-2]:null;
+        const trend=prev?getTrend(prev.value,latest.value,m.refLow,m.refHigh):null;
+        flagged.push({panel,metric:m,latest,prev,status:st,trend});
+      }
+    });
+  });
+  if(!flagged.length){document.getElementById('attentionSection').style.display='none';return;}
+  document.getElementById('attentionSection').style.display='block';
+  const el=document.getElementById('attentionList');
+  el.innerHTML=flagged.slice(0,5).map(f=>{
+    const col=f.status==='flagged'?'var(--red)':f.status==='watch'?'var(--amber)':'var(--green)';
+    const trendTxt=f.trend?`<div class="att-trend" style="color:${f.trend.color}">${f.trend.arrow} ${f.trend.label}</div>`:'';
+    return`<div class="attention-item ${f.status}" onclick="openMetricTrend('${f.panel.id}','${f.metric.id}','panel')">
+      <div class="att-left">
+        <div class="att-name">${f.metric.name}</div>
+        <div class="att-sub">${f.panel.name} · ${f.latest.date}</div>
+      </div>
+      <div class="att-right">
+        <div class="att-val" style="color:${col}">${f.latest.value}</div>
+        <div class="att-ref">${formatRef(f.metric.refLow,f.metric.refHigh)} ${f.metric.unit}</div>
+        ${trendTxt}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderPanelGrid(){
+  const el=document.getElementById('panelGrid');
+  const np=document.getElementById('noPanels');
+  if(!panels.length){el.style.display='none';np.style.display='block';return;}
+  el.style.display='grid';np.style.display='none';
+  const panelIcons={
+    'Lipid Studies':'🫀','Full Blood Count':'🩸','Biochemistry':'⚗️',
+    'Thyroid':'🦋','Iron Studies':'🔩','B12/Folate':'💊','ECG':'💓'
+  };
+  el.innerHTML=panels.map(p=>{
+    const flaggedCount=p.metrics.filter(m=>{
+      const v=m.values[m.values.length-1];
+      return v&&metricStatus(v.value,m.refLow,m.refHigh)!=='normal';
+    }).length;
+    const status=flaggedCount>0?(flaggedCount>1?'flagged':'watch'):'normal';
+    const statusLabel=status==='flagged'?'Flagged':status==='watch'?'Watch':'Normal';
+    const latestDate=p.metrics.reduce((d,m)=>{const v=m.values[m.values.length-1];return v&&v.date>d?v.date:d;},'');
+    return`<div class="panel-card" onclick="openPanel('${p.id}')">
+      <div class="panel-icon">${panelIcons[p.name]||'🧪'}</div>
+      <div class="panel-name">${p.name}</div>
+      <div class="panel-date">${latestDate||'—'}</div>
+      <span class="panel-status ${status}">${flaggedCount>0?`${flaggedCount} flagged`:statusLabel}</span>
+      <div class="panel-metrics">${p.metrics.length} metrics</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── PANEL DETAIL ───
+function openPanel(panelId){
+  currentPanel=panels.find(p=>p.id===panelId);
+  if(!currentPanel)return;
+  document.getElementById('panelDetailTitle').textContent=currentPanel.name;
+  const dates=currentPanel.metrics.map(m=>m.values[m.values.length-1]?.date).filter(Boolean);
+  const latestDate=dates.sort().reverse()[0]||'';
+  document.getElementById('panelDetailSub').textContent=latestDate?`Latest: ${latestDate} · ${currentPanel.metrics.length} metrics`:`${currentPanel.metrics.length} metrics`;
+  renderMetricList();
+  showView('panel');
+}
+
+function renderMetricList(){
+  const el=document.getElementById('metricList');
+  el.innerHTML=currentPanel.metrics.map(m=>{
+    const latest=m.values[m.values.length-1];
+    const prev=m.values.length>1?m.values[m.values.length-2]:null;
+    if(!latest)return'';
+    const st=metricStatus(latest.value,m.refLow,m.refHigh);
+    const col=st==='flagged'?'flagged':st==='watch'?'watch':'normal';
+    const flagLabel=latest.flag==='H'?'High':latest.flag==='L'?'Low':'';
+    const barHtml=makeRangeBar(latest.value,m.refLow,m.refHigh,prev?.value,st);
+    const prevTxt=prev?`<div class="metric-prev">Previous: ${prev.value} ${m.unit} (${prev.date})</div>`:'';
+    const trend=prev?getTrend(prev.value,latest.value,m.refLow,m.refHigh):null;
+    const trendHtml=trend?`<span style="font-size:12px;font-weight:500;color:${trend.color};margin-left:8px">${trend.arrow} ${trend.label}</span>`:'';
+    return`<div class="metric-item" onclick="openMetricTrend('${currentPanel.id}','${m.id}','panel')">
+      <div class="metric-top">
+        <div>
+          <div class="metric-name">${m.name}${trendHtml}</div>
+        </div>
+        <div class="metric-val-wrap">
+          <div class="metric-val ${col}">${latest.value}<span class="metric-unit">${m.unit}</span></div>
+          ${flagLabel?`<div class="metric-flag ${latest.flag==='L'?'low':'high'}">${flagLabel}</div>`:''}
+        </div>
+      </div>
+      ${barHtml}
+      ${prevTxt}
+    </div>`;
+  }).join('');
+}
+
+function makeRangeBar(val,low,high,prevVal,status){
+  if(low===null&&high===null)return'';
+  const hasLow=low!==null, hasHigh=high!==null;
+  let min,max;
+  if(hasLow&&hasHigh){min=low*0.5;max=high*1.5;}
+  else if(hasHigh){min=0;max=high*1.5;}
+  else{min=0;max=low*2;}
+  const range=max-min;
+  const valPct=Math.min(Math.max((val-min)/range*100,2),98);
+  const prevPct=prevVal!==undefined&&prevVal!==null?Math.min(Math.max((prevVal-min)/range*100,2),98):null;
+  const col=status==='flagged'?'#b91c1c':status==='watch'?'#b45309':'#16a34a';
+
+  let zones='';
+  if(hasLow&&hasHigh){
+    const lowPct=(low-min)/range*100;
+    const highPct=(high-min)/range*100;
+    zones=`<div class="range-low" style="width:${lowPct}%"></div><div class="range-normal" style="left:${lowPct}%;width:${highPct-lowPct}%"></div><div class="range-high" style="width:${100-highPct}%"></div>`;
+  }else if(hasHigh){
+    const highPct=(high-min)/range*100;
+    zones=`<div class="range-normal" style="left:0;width:${highPct}%"></div><div class="range-high" style="width:${100-highPct}%"></div>`;
+  }else{
+    const lowPct=(low-min)/range*100;
+    zones=`<div class="range-low" style="width:${lowPct}%"></div><div class="range-normal" style="left:${lowPct}%;width:${100-lowPct}%"></div>`;
+  }
+
+  const prevDot=prevPct!==null?`<div class="range-dot prev" style="left:${prevPct}%"></div>`:'';
+  const refLabel=formatRef(low,high);
+
+  return`<div class="range-bar-wrap">
+    <div class="range-bar">
+      ${zones}
+      ${prevDot}
+      <div class="range-dot ${status}" style="left:${valPct}%;background:${col}"></div>
+    </div>
+    <div class="range-labels"><span>${min.toFixed(1)}</span><span>ref ${refLabel}</span><span>${max.toFixed(1)}</span></div>
+  </div>`;
+}
+
+// ─── METRIC TREND ───
+function openMetricTrend(panelId, metricId, from){
+  previousView=from;
+  currentPanel=panels.find(p=>p.id===panelId);
+  currentMetric=currentPanel?.metrics.find(m=>m.id===metricId);
+  if(!currentMetric)return;
+  document.getElementById('metricTrendTitle').textContent=currentMetric.name;
+  document.getElementById('metricTrendSub').textContent=`${currentPanel.name} · ${currentMetric.unit} · ref ${formatRef(currentMetric.refLow,currentMetric.refHigh)}`;
+  renderMetricTrendChart();
+  renderMetricInsight();
+  renderMetricExplainer();
+  renderMetricAllVals();
+  showView('metric');
+}
+
+function goBackFromMetric(){
+  if(previousView==='panel'&&currentPanel){
+    showView('panel');
+  }else{
+    showView('dashboard');
+  }
+}
+
+function renderMetricTrendChart(){
+  const ctx=document.getElementById('metricTrendChart').getContext('2d');
+  if(metricChartInst)metricChartInst.destroy();
+  const vals=currentMetric.values;
+  if(!vals.length)return;
+  const labels=vals.map(v=>v.date);
+  const data=vals.map(v=>v.value);
+  const refLow=currentMetric.refLow, refHigh=currentMetric.refHigh;
+  // Build reference band
+  const refLowData=vals.map(()=>refLow);
+  const refHighData=vals.map(()=>refHigh);
+  const datasets=[
+    {label:currentMetric.name,data,borderColor:'#1d4ed8',backgroundColor:'rgba(29,78,216,0.08)',tension:0.3,pointRadius:6,pointBackgroundColor:data.map((v,i)=>{const st=metricStatus(v,refLow,refHigh);return st==='flagged'?'#b91c1c':st==='watch'?'#b45309':'#16a34a';}),pointBorderColor:'#fff',pointBorderWidth:2,zIndex:10},
+  ];
+  if(refHigh!==null)datasets.push({label:'Upper limit',data:refHighData,borderColor:'rgba(185,28,28,0.3)',borderDash:[4,4],pointRadius:0,fill:false});
+  if(refLow!==null)datasets.push({label:'Lower limit',data:refLowData,borderColor:'rgba(185,28,28,0.3)',borderDash:[4,4],pointRadius:0,fill:refHigh!==null?'-1':false,backgroundColor:'rgba(220,252,231,0.3)'});
+  metricChartInst=new Chart(ctx,{type:'line',data:{labels,datasets},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.parsed.y} ${currentMetric.unit}`}}},scales:{x:{ticks:{font:{size:12,family:'DM Sans'}}},y:{beginAtZero:false,ticks:{font:{size:11}}}}}});
+}
+
+function renderMetricInsight(){
+  const el=document.getElementById('metricInsight');
+  const vals=currentMetric.values;
+  if(vals.length<2){el.innerHTML=`<div class="trend-insight-icon">📊</div><div class="trend-insight-text">Add more blood test results to see trends emerge.</div>`;return;}
+  const latest=vals[vals.length-1];
+  const first=vals[0];
+  const diff=(latest.value-first.value).toFixed(1);
+  const diffAbs=Math.abs(diff);
+  const improving=isImproving(first.value,latest.value,currentMetric.refLow,currentMetric.refHigh);
+  const st=metricStatus(latest.value,currentMetric.refLow,currentMetric.refHigh);
+  const prevSt=metricStatus(first.value,currentMetric.refLow,currentMetric.refHigh);
+  let icon='📊', text='';
+  if(st==='normal'&&prevSt!=='normal'){icon='✅';text=`<strong>Now within normal range</strong> — down from ${first.value} in ${first.date} to ${latest.value} in ${latest.date}, a change of ${diffAbs} ${currentMetric.unit}.`;}
+  else if(st!=='normal'&&prevSt==='normal'){icon='⚠️';text=`<strong>Moved outside normal range</strong> since ${first.date}. Currently ${latest.value} ${currentMetric.unit}, reference is ${formatRef(currentMetric.refLow,currentMetric.refHigh)}.`;}
+  else if(st!=='normal'&&prevSt!=='normal'){icon='🔴';text=`<strong>Consistently outside normal range</strong> across ${vals.length} results. Discuss with your doctor.`;}
+  else if(improving){icon='📈';text=`<strong>Trending in the right direction</strong> — changed by ${diff} ${currentMetric.unit} since ${first.date}.`;}
+  else{icon='✅';text=`<strong>Consistently within normal range</strong> across all ${vals.length} results.`;}
+  el.innerHTML=`<div class="trend-insight-icon">${icon}</div><div class="trend-insight-text">${text}</div>`;
+}
+
+function renderMetricAllVals(){
+  const el=document.getElementById('metricAllVals');
+  const vals=[...currentMetric.values].reverse();
+  el.innerHTML=vals.map(v=>{
+    const st=metricStatus(v.value,currentMetric.refLow,currentMetric.refHigh);
+    const col=st==='flagged'?'var(--red)':st==='watch'?'var(--amber)':'var(--green)';
+    const flag=v.flag?` <span style="font-size:11px;font-weight:500;color:${col}">${v.flag==='H'?'↑ High':'↓ Low'}</span>`:'';
+    return`<div class="trend-val-row">
+      <div class="trend-val-date">${v.date}</div>
+      <div class="trend-val-num" style="color:${col}">${v.value}${flag}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── HELPERS ───
+function metricStatus(val,low,high){
+  if(low!==null&&val<low)return'flagged';
+  if(high!==null&&val>high)return'flagged';
+  if(low!==null&&val<low*1.1)return'watch';
+  if(high!==null&&val>high*0.9)return'watch';
+  return'normal';
+}
+function formatRef(low,high){
+  if(low!==null&&high!==null)return`${low}–${high}`;
+  if(high!==null)return`< ${high}`;
+  if(low!==null)return`> ${low}`;
+  return'—';
+}
+function isImproving(from,to,low,high){
+  if(low!==null&&high!==null){const mid=(low+high)/2;return Math.abs(to-mid)<Math.abs(from-mid);}
+  if(high!==null)return to<from;
+  if(low!==null)return to>from;
+  return false;
+}
+function getTrend(prev,curr,low,high){
+  const imp=isImproving(prev,curr,low,high);
+  const diff=(curr-prev).toFixed(1);
+  if(Math.abs(diff)<0.1)return{arrow:'→',label:'Unchanged',color:'var(--ink-3)'};
+  if(imp)return{arrow:'↑',label:`Improving (${diff>0?'+':''}${diff})`,color:'var(--green)'};
+  return{arrow:'↓',label:`Changed (${diff>0?'+':''}${diff})`,color:'var(--amber)'};
+}
+
+
+// ─── IMPORT ───
+let importParsed=null;
+let importStep='paste';
+
+function openImport(){
+  importParsed=null;
+  importStep='paste';
+  document.getElementById('importStep1').classList.add('active');
+  document.getElementById('importStep2').classList.remove('active');
+  document.getElementById('importFeedback').innerHTML='';
+  document.getElementById('importPasteBox').value='';
+  document.getElementById('importActionBtn').textContent='Preview results';
+  document.getElementById('importActionBtn').disabled=false;
+  document.getElementById('importModal').classList.add('open');
+}
+function closeImport(){document.getElementById('importModal').classList.remove('open');}
+function onImportOverlayClick(e){if(e.target===document.getElementById('importModal'))closeImport();}
+function onPasteInput(){document.getElementById('importFeedback').innerHTML='';}
+
+function handleImportAction(){
+  if(importStep==='paste') parsePastedJSON();
+  else confirmImport();
+}
+
+function parsePastedJSON(){
+  const raw=document.getElementById('importPasteBox').value.trim();
+  if(!raw){
+    document.getElementById('importFeedback').innerHTML=`<div class="result-box error">Please paste the JSON from Claude before continuing.</div>`;
+    return;
+  }
+  let parsed;
+  try{
+    const clean=raw.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim();
+    parsed=JSON.parse(clean);
+  }catch(e){
+    document.getElementById('importFeedback').innerHTML=`<div class="result-box error">That doesn't look like valid JSON. Make sure you copied Claude's complete response.<br><br>Error detail: ${e.message}</div>`;
+    return;
+  }
+  if(!parsed.panels||!Array.isArray(parsed.panels)){
+    document.getElementById('importFeedback').innerHTML=`<div class="result-box error">JSON structure not recognised. Make sure you asked Claude to use the health hub format.</div>`;
+    return;
+  }
+  showImportPreview(parsed);
+}
+
+function showImportPreview(extracted){
+  importParsed=extracted;
+  importStep='preview';
+  let totalPoints=0,newPoints=0,dupePoints=0;
+  extracted.panels.forEach(p=>{
+    (p.metrics||[]).forEach(m=>{
+      (m.values||[]).forEach(v=>{
+        totalPoints++;
+        const exists=panels.some(ep=>ep.name===p.name&&ep.metrics.some(em=>em.name===m.name&&em.values.some(ev=>ev.date===v.date)));
+        if(exists)dupePoints++;else newPoints++;
+      });
+    });
+  });
+  document.getElementById('importStep1').classList.remove('active');
+  document.getElementById('importStep2').classList.add('active');
+  document.getElementById('importSummary').innerHTML=`
+    Found <strong>${extracted.panels.length} panel${extracted.panels.length!==1?'s':''}</strong> with <strong>${totalPoints} data point${totalPoints!==1?'s':''}</strong>.
+    ${dupePoints>0?`<span style="color:var(--amber)"> ${dupePoints} already stored and will be skipped.</span>`:''}
+    <br><strong style="color:var(--green-mid)">${newPoints} new data point${newPoints!==1?'s':''} will be added.</strong>`;
+  const rows=[];
+  extracted.panels.forEach(p=>{
+    (p.metrics||[]).slice(0,3).forEach(m=>{
+      const latest=(m.values||[])[(m.values||[]).length-1];
+      if(latest)rows.push({panel:p.name,metric:m.name,value:latest.value,unit:m.unit||'',ref:formatRef(m.refLow??null,m.refHigh??null),flag:latest.flag||'—',date:latest.date});
+    });
+  });
+  document.getElementById('importPreviewTable').innerHTML=`
+    <thead><tr><th>Panel</th><th>Metric</th><th>Value</th><th>Ref</th><th>Flag</th><th>Date</th></tr></thead>
+    <tbody>${rows.slice(0,12).map(r=>`<tr><td>${r.panel}</td><td>${r.metric}</td><td>${r.value} ${r.unit}</td><td>${r.ref}</td><td style="color:${r.flag==='H'||r.flag==='L'?'var(--red)':'var(--ink-3)'}">${r.flag}</td><td>${r.date}</td></tr>`).join('')}</tbody>`;
+  if(newPoints>0){
+    document.getElementById('importActionBtn').textContent=`Import ${newPoints} new result${newPoints!==1?'s':''}`;
+    document.getElementById('importActionBtn').disabled=false;
+  }else{
+    document.getElementById('importActionBtn').textContent='Nothing new to import';
+    document.getElementById('importActionBtn').disabled=true;
+  }
+}
+
+function confirmImport(){
+  if(!importParsed)return;
+  importParsed.panels.forEach(newPanel=>{
+    let ep=panels.find(p=>p.name===newPanel.name);
+    if(!ep){ep={id:newPanel.name.replace(/\s+/g,'-').toLowerCase(),name:newPanel.name,metrics:[]};panels.push(ep);}
+    (newPanel.metrics||[]).forEach(newMetric=>{
+      let em=ep.metrics.find(m=>m.name===newMetric.name);
+      if(!em){em={id:newMetric.name.replace(/\s+/g,'-').toLowerCase(),name:newMetric.name,unit:newMetric.unit||'',refLow:newMetric.refLow??null,refHigh:newMetric.refHigh??null,values:[]};ep.metrics.push(em);}
+      (newMetric.values||[]).forEach(v=>{if(!em.values.some(ev=>ev.date===v.date))em.values.push(v);});
+      em.values.sort((a,b)=>a.date.localeCompare(b.date));
+    });
+  });
+  saveLocal();if(accessToken)syncDrive();
+  closeImport();renderDashboard();
+  showToast('Blood test results imported ✓','success');
+}
+
+
+// ─── METRIC EXPLAINERS ───
+const METRIC_INFO={
+  'Cholesterol':{what:'Total cholesterol is the overall amount of cholesterol in your blood, including both HDL (good) and LDL (bad). On its own it is a rough guide — the ratio between HDL and total is more meaningful.',why:'High total cholesterol is associated with plaque building up in artery walls over time, which can increase the risk of heart disease and stroke.',improve:{normal:'Your level is within range. Maintain it with a diet rich in vegetables, wholegrains, and healthy fats like olive oil and avocado.',watch:'Consider reducing saturated fats (red meat, full-fat dairy, fried food) and increasing soluble fibre (oats, lentils, beans). Regular aerobic exercise helps.',flagged:'Discuss with your GP. Dietary changes and exercise are the first line — medication may be considered if lifestyle changes are not sufficient.'}},
+  'Triglyceride':{what:'Triglycerides are a type of fat in your blood. After eating, your body converts excess calories into triglycerides and stores them in fat cells, releasing them for energy between meals.',why:'Elevated triglycerides are linked to heart disease risk, particularly when combined with low HDL. High levels can also indicate insulin resistance or excess alcohol intake.',improve:{normal:'Your level is good. Limiting refined carbohydrates, sugar, and alcohol keeps triglycerides in check.',watch:'Cut back on sugar, white bread, rice, and alcohol. Even modest weight loss of 5-10% can significantly lower triglycerides.',flagged:'Discuss with your GP. Dietary changes are highly effective — triglycerides respond well to reducing sugar and processed carbs.'}},
+  'HDL-c':{what:'HDL (High-Density Lipoprotein) is often called good cholesterol. It carries cholesterol away from the arteries back to the liver for removal — essentially cleaning your arteries.',why:'Higher HDL is protective against heart disease. Low HDL is a significant cardiovascular risk factor even when other numbers look normal.',improve:{normal:'Well done — HDL above the reference range is actually beneficial. Regular exercise is the most effective way to keep it elevated.',watch:'Your HDL is close to the lower boundary. Aerobic exercise most days, quitting smoking if applicable, and moderate healthy fats (nuts, olive oil, oily fish) all raise HDL.',flagged:'Low HDL is worth addressing. Vigorous exercise, reducing trans fats, and increasing omega-3 intake from salmon, sardines, and flaxseed are effective strategies.'}},
+  'LDL-c':{what:'LDL (Low-Density Lipoprotein) is often called bad cholesterol. It carries cholesterol to your cells but excess LDL can deposit on artery walls, forming plaques that narrow arteries.',why:'High LDL is one of the strongest modifiable risk factors for heart attack and stroke. Keeping it below the reference range significantly reduces cardiovascular risk.',improve:{normal:'Your LDL is within range. Limit saturated fat and prioritise unsaturated fats to keep it there.',watch:'Getting close to the upper limit. Reduce red meat, full-fat dairy, coconut oil, and palm oil. Increase plant sterols and soluble fibre.',flagged:'Above the recommended limit. Your GP may want to discuss this. Dietary changes can lower LDL by 10-15%. Statins are effective if lifestyle changes are not sufficient.'}},
+  'TC/HDL-c':{what:'The TC/HDL ratio divides your total cholesterol by your HDL. It is considered a more accurate predictor of cardiovascular risk than either number on its own.',why:'A lower ratio means your HDL is doing a better job clearing cholesterol relative to total levels. Below 4.5 is the target for men; below 4.0 is ideal.',improve:{normal:'Excellent — your ratio has improved significantly from 5.1 in 2023 to 3.3 now. This is a meaningful positive trend. Keep doing what you are doing.',watch:'Close to the boundary. Raising your HDL through exercise and lowering LDL through diet will both improve this ratio.',flagged:'Above the recommended ratio. Your most impactful levers are more aerobic exercise to raise HDL, less saturated fat to lower LDL, and modest weight reduction if applicable.'}},
+  'Non-HDL-c':{what:'Non-HDL cholesterol includes all the bad types of cholesterol — LDL plus other particles like VLDL. It is calculated by subtracting HDL from total cholesterol.',why:'Non-HDL gives a broader picture of cardiovascular risk than LDL alone and is considered more reliable when triglycerides are elevated.',improve:{normal:'Your non-HDL is within range. Continue your current healthy habits.',watch:'Approaching the upper limit. The same strategies that lower LDL apply — reduce saturated fats and increase fibre.',flagged:'Above target. Combining dietary changes with regular exercise is the most effective approach.'}},
+  'HAEMOGLOBIN':{what:'Haemoglobin is the protein in red blood cells that carries oxygen from your lungs to every cell in your body. It is what makes blood red.',why:'Low haemoglobin (anaemia) means your body may not be getting enough oxygen, causing fatigue, shortness of breath, and reduced exercise capacity.',improve:{normal:'Your haemoglobin is within range. Iron-rich foods like red meat, legumes, and leafy greens alongside vitamin C help maintain good levels.',watch:'Your haemoglobin has been borderline across multiple tests. Worth mentioning to your GP. Iron, B12, and folate all affect haemoglobin — your B12 and folate look fine, so iron absorption is worth checking.',flagged:'Below the normal range. This warrants a conversation with your GP — causes include iron deficiency, B12 deficiency, or other conditions.'}},
+  'MCH':{what:'MCH (Mean Corpuscular Haemoglobin) measures the average amount of haemoglobin inside each red blood cell. Low MCH means your red cells are carrying less oxygen than they should.',why:'Consistently low MCH often indicates iron deficiency anaemia or thalassaemia trait. It is a useful indicator even when haemoglobin is borderline normal.',improve:{normal:'Within range.',watch:'Your MCH has been low across all three tests, suggesting reduced haemoglobin per cell. This pattern alongside borderline haemoglobin is worth discussing with your GP. Iron-rich foods and optimising iron absorption by taking vitamin C with meals and avoiding tea and coffee around mealtimes may help.',flagged:'Persistently low MCH warrants investigation. Your GP may check iron stores and consider other causes.'}},
+  'Neutrophils':{what:'Neutrophils are the most common type of white blood cell and your first line of defence against bacterial infections. They rush to sites of infection and destroy bacteria.',why:'Mildly low neutrophils can mean the immune system is slightly less equipped to fight bacterial infections. It can be your normal baseline or a sign worth monitoring.',improve:{normal:'Within range.',watch:'Your neutrophils have been mildly low in two of three tests. This is worth mentioning to your GP. It may simply be your normal baseline — benign ethnic neutropaenia is common. Adequate sleep, a balanced diet with zinc and vitamin C, and avoiding smoking all support healthy white cell production.',flagged:'Discuss with your GP. A repeat test may be recommended.'}},
+  'WCC':{what:'White Cell Count measures the total number of white blood cells — your immune system. It includes neutrophils, lymphocytes, monocytes, eosinophils, and basophils.',why:'Changes in white cell count can indicate infection, inflammation, immune disorders, or bone marrow issues.',improve:{normal:'Your WCC is within the normal range across all tests — a good indicator of healthy immune function.',watch:'Approaching a boundary. Worth monitoring.',flagged:'Outside the reference range. Discuss with your GP.'}},
+  'TSH':{what:'TSH (Thyroid Stimulating Hormone) is produced by the pituitary gland and tells the thyroid to produce thyroid hormones. It is the primary screening test for thyroid function.',why:'Abnormal TSH can indicate an underactive thyroid (hypothyroidism, high TSH) or overactive thyroid (hyperthyroidism, low TSH), both of which affect energy, weight, mood, and many other functions.',improve:{normal:'Your TSH has been stable and within the normal range across all three tests — a reassuring pattern. No action needed.',watch:'Near a boundary. Worth monitoring at your next test.',flagged:'Outside the normal range. Your GP will likely want to investigate further with additional thyroid tests.'}},
+  'Ferritin':{what:'Ferritin is a protein that stores iron in your cells. The blood level of ferritin reflects your body\'s iron stores — how much iron you have banked.',why:'Low ferritin is often the first sign of iron deficiency, even before haemoglobin drops. It can cause fatigue, hair loss, and reduced exercise tolerance.',improve:{normal:'Your ferritin is consistently within range across all three tests — good iron reserves. Maintain with a varied diet including red meat, legumes, and leafy greens.',watch:'Approaching a boundary. Monitor with iron-rich foods.',flagged:'Low ferritin indicates depleted iron stores. Discuss with your GP about dietary changes or supplementation.'}},
+  'Iron':{what:'Serum iron measures the amount of iron currently circulating in your blood. It fluctuates throughout the day and after meals, so it is interpreted alongside ferritin and transferrin.',why:'Low iron can contribute to anaemia and fatigue. High iron may indicate haemochromatosis or other conditions.',improve:{normal:'Your iron is within range.',watch:'Near boundary. Combine iron-rich foods with vitamin C to enhance absorption.',flagged:'Discuss with your GP.'}},
+  'Transferrin':{what:'Transferrin is the protein that transports iron through the blood. The body produces more transferrin when iron stores are low, so high transferrin can be an early sign of iron deficiency.',why:'Transferrin levels help distinguish between different causes of anaemia and assess iron transport capacity.',improve:{normal:'Your transferrin is within range — consistent across tests.',watch:'Near boundary. Monitor alongside ferritin.',flagged:'Outside range. Discuss with your GP.'}},
+  'Transferrin Sat.':{what:'Transferrin saturation is the percentage of transferrin that is carrying iron. A low percentage means iron stores are being depleted; a high percentage can indicate iron overload.',why:'Transferrin saturation below 20% alongside low ferritin strongly suggests iron deficiency. Above 50% may indicate haemochromatosis.',improve:{normal:'Your transferrin saturation is within the normal range across all tests.',watch:'Near boundary. Keep an eye on iron stores.',flagged:'Outside range. Discuss with your GP.'}},
+  'Vitamin B12':{what:'Vitamin B12 is essential for making red blood cells, maintaining nerve function, and producing DNA. It is found almost exclusively in animal products.',why:'B12 deficiency develops slowly and can cause nerve damage, anaemia, fatigue, and cognitive changes before it becomes obvious in a blood test.',improve:{normal:'Your B12 is within range. If you eat meat, eggs, and dairy regularly, levels should remain stable.',watch:'Your B12 is in the 160-350 range which the lab notes may occasionally occur in B12 deficiency. Worth monitoring. Active B12 provides additional reassurance.',flagged:'Low B12 is worth investigating. Causes include dietary deficiency (particularly in vegetarians/vegans), reduced absorption from the gut, or medications like metformin.'}},
+  'Active Vit. B12':{what:'Active B12 (holotranscobalamin) measures only the portion of B12 that your cells can actually use. It is a more sensitive marker of B12 status than total B12.',why:'Some people have normal total B12 but low active B12, meaning the available B12 for cells is actually limited. Active B12 can flag deficiency earlier.',improve:{normal:'Your active B12 is at the top of the reference range — a strong indicator of good B12 status.',watch:'Near boundary.',flagged:'Low active B12 is significant. Discuss with your GP about supplementation or investigating absorption.'}},
+  'Serum Folate':{what:'Folate (vitamin B9) is essential for making DNA and red blood cells. It works alongside B12 and is particularly important during pregnancy.',why:'Folate deficiency causes a type of anaemia and in pregnancy is linked to neural tube defects. It is found in leafy greens, legumes, and fortified foods.',improve:{normal:'Your folate levels are excellent and have increased across your tests — a positive trend. Continue eating leafy greens, legumes, and wholegrains.',watch:'Near the lower boundary.',flagged:'Low folate. Increase leafy greens, lentils, chickpeas, and consider a supplement.'}},
+  'Homocysteine':{what:'Homocysteine is an amino acid produced naturally by the body. Elevated levels are associated with increased cardiovascular risk and are influenced by B12 and folate status.',why:'High homocysteine damages artery walls and promotes clotting. B12, folate, and B6 help convert homocysteine to harmless compounds.',improve:{normal:'Within the reference range.',watch:'Your homocysteine is at 18, which is within the reference range of 10-23 but towards the higher end. Adequate B12 and folate help keep it in check — both of which look healthy in your results. Staying active and limiting alcohol also helps.',flagged:'Elevated homocysteine. Increasing B12, folate, and B6 intake through diet or supplementation often helps.'}},
+  'Creatinine':{what:'Creatinine is a waste product from muscle metabolism. Your kidneys filter it out continuously — so blood creatinine levels are a direct measure of how well your kidneys are working.',why:'Stable creatinine over time is reassuring. A steady rise, even within normal range, can be an early warning sign of declining kidney function.',improve:{normal:'Your creatinine has been remarkably stable at 96-97 across all three tests — an excellent sign of consistent kidney function. Stay well hydrated.',watch:'Near boundary. Stay hydrated and avoid regular NSAID use (ibuprofen).',flagged:'Outside range. Discuss with your GP.'}},
+  'eGFR':{what:'eGFR (estimated Glomerular Filtration Rate) estimates how much blood your kidneys filter each minute. It is the key measure of kidney function.',why:'eGFR above 60 is generally considered adequate kidney function. Declining eGFR over time is an early warning of chronic kidney disease.',improve:{normal:'Your eGFR has been stable at 82-83 across all three tests. This is consistent and reassuring. Blood pressure control is the most important thing for long-term kidney health.',watch:'Near boundary. Keep blood pressure well controlled.',flagged:'Below 60. Your GP may want more frequent monitoring.'}},
+  'Albumin':{what:'Albumin is the most abundant protein in blood, made by the liver. It maintains fluid balance, transports substances, and reflects nutritional status.',why:'Low albumin can indicate poor nutrition, liver disease, or kidney problems. It is a broad marker of overall health.',improve:{normal:'Your albumin is within range across all tests.',watch:'Near boundary.',flagged:'Discuss with your GP.'}},
+  'ALT':{what:'ALT (Alanine Aminotransferase) is an enzyme found mainly in the liver. When liver cells are damaged, ALT leaks into the blood — so it is a sensitive marker of liver health.',why:'Elevated ALT can indicate fatty liver, alcohol-related damage, medication effects, or other liver conditions. Even mildly elevated levels over time are worth monitoring.',improve:{normal:'Your ALT is within the normal range and has been consistent. Limit alcohol, maintain a healthy weight, and stay active — these are the most protective factors for liver health.',watch:'Near the upper boundary. Limit alcohol, avoid unnecessary medications (paracetamol at high doses, NSAIDs), and maintain a healthy weight.',flagged:'Above normal range. Discuss with your GP — they may want to investigate further.'}},
+  'AST':{what:'AST (Aspartate Aminotransferase) is an enzyme found in the liver and muscles. Like ALT, it rises when these tissues are damaged.',why:'AST is less specific to the liver than ALT — muscle damage can also raise it. The ratio of AST to ALT can help identify the cause.',improve:{normal:'Your AST is within range across all tests.',watch:'Near upper boundary.',flagged:'Discuss with your GP.'}},
+  'Bicarbonate':{what:'Bicarbonate is a buffer that helps keep your blood at the right pH (acid-base balance). It is regulated by the kidneys and lungs working together.',why:'High bicarbonate (metabolic alkalosis) can result from vomiting, diuretic use, or certain kidney conditions. It is often a benign finding on a single test.',improve:{normal:'Within range.',watch:'Your bicarbonate was slightly elevated at 34 in the latest test (reference up to 32). A single borderline result is often not clinically significant but worth mentioning at your next GP visit.',flagged:'Above range. Discuss with your GP.'}},
+  'Sodium':{what:'Sodium is an electrolyte that controls fluid balance, blood pressure, and nerve and muscle function. It is tightly regulated by the kidneys.',why:'Abnormal sodium affects how your cells function. Most people get enough sodium through diet.',improve:{normal:'Your sodium is consistently normal — a good indicator of healthy kidney function and hydration.',watch:'Near boundary. Stay well hydrated.',flagged:'Discuss with your GP.'}},
+  'Potassium':{what:'Potassium is an electrolyte critical for heart rhythm, muscle contraction, and nerve signals. The heart is particularly sensitive to potassium levels.',why:'Both high and low potassium can cause heart rhythm problems and muscle weakness.',improve:{normal:'Your potassium is consistently within the normal range.',watch:'Near the upper boundary. Moderate high-potassium foods if needed.',flagged:'Outside the range. Warrants prompt GP review given the cardiac implications.'}},
+  'RBC':{what:'RBC (Red Blood Cell count) measures the number of red blood cells per litre of blood. Red blood cells carry oxygen to tissues and carbon dioxide back to the lungs.',why:'Abnormal RBC counts can indicate anaemia, dehydration, or blood disorders.',improve:{normal:'Your RBC is within range across all tests.',watch:'Near boundary — monitor alongside haemoglobin.',flagged:'Outside range. Discuss with your GP.'}},
+  'PLATELETS':{what:'Platelets are tiny blood cells that help your blood clot when you are injured. They rush to wound sites and stick together to form clots.',why:'Too few platelets can cause excessive bleeding; too many can increase clotting risk.',improve:{normal:'Your platelet count is well within range across all tests.',watch:'Monitor at next test.',flagged:'Outside range. Discuss with your GP.'}},
+};
+
+function renderMetricExplainer(){
+  const m=currentMetric;
+  const info=METRIC_INFO[m.name];
+  const expEl=document.getElementById('metricExplainer');
+  const advEl=document.getElementById('metricAdvice');
+  if(!info){expEl.innerHTML='';advEl.innerHTML='';return;}
+
+  expEl.innerHTML=`<div class="metric-explainer" style="margin-top:12px;">
+    <div class="metric-explainer-title">What is ${m.name}?</div>
+    <div class="metric-explainer-text">${info.what}<br><br><strong>Why it matters:</strong> ${info.why}</div>
+  </div>`;
+
+  // Get latest status for advice
+  const latest=m.values[m.values.length-1];
+  if(!latest||!info.improve){advEl.innerHTML='';return;}
+  const st=metricStatus(latest.value,m.refLow,m.refHigh);
+  const adviceKey=st==='flagged'?'flagged':st==='watch'?'watch':'normal';
+  const advice=info.improve[adviceKey];
+  if(!advice){advEl.innerHTML='';return;}
+
+  const isWarn=st!=='normal';
+  advEl.innerHTML=`<div class="metric-advice ${isWarn?'warn':''}">
+    <div class="metric-advice-title">${st==='normal'?'How to maintain this':'How to improve this'}</div>
+    <div class="metric-advice-text">${advice}</div>
+  </div>`;
+}
+
+// ─── NAVIGATION ───
+function showView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+}
+function openBPTracker(){window.open(BP_TRACKER_URL,'_blank');}
+
+// ─── TOAST ───
+function showToast(msg,type=''){
+  const el=document.getElementById('toast');el.textContent=msg;
+  el.className='toast show'+(type==='error'?' error':type==='success'?' success':'');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),3500);
+}
+</script>
+</body>
+</html>
